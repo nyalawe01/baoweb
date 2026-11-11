@@ -59,6 +59,16 @@ interface TestimoniesModuleProps {
 const getSettingKey = (s: any) => s?.key || s?.setting_key;
 const getSettingValue = (s: any) => s?.value ?? s?.setting_value;
 
+export const DEFAULT_PRESET_CATEGORIES = [
+  'Youth Graduate',
+  'Caregiver & Community Leader',
+  'HEART Arts Performer',
+  'Street Outreach Participant',
+  'Community Champion',
+  'Development Partner / Donor',
+  'Volunteer Mentor',
+];
+
 const DEFAULT_VERIFIED_TESTIMONIALS: TestimonialItem[] = [
   {
     id: 't-default-1',
@@ -160,6 +170,8 @@ export function TestimoniesModule({
   const [formAvatar, setFormAvatar] = useState('');
   const [formDateLabel, setFormDateLabel] = useState('');
   const [formCategory, setFormCategory] = useState('Youth Graduate');
+  const [isManualCategory, setIsManualCategory] = useState(false);
+  const [manualCategoryText, setManualCategoryText] = useState('');
   const [formRating, setFormRating] = useState<number>(5);
   const [formIsPublished, setFormIsPublished] = useState(true);
 
@@ -249,6 +261,8 @@ export function TestimoniesModule({
     setFormAvatar('');
     setFormDateLabel('Community Member');
     setFormCategory('Youth Graduate');
+    setIsManualCategory(false);
+    setManualCategoryText('');
     setFormRating(5);
     setFormIsPublished(true);
     setIsFormOpen(true);
@@ -264,7 +278,16 @@ export function TestimoniesModule({
     setFormQuoteSw(item.quote_sw || '');
     setFormAvatar(item.avatar_url || '');
     setFormDateLabel(item.date_label || '');
-    setFormCategory(item.category || 'Youth Graduate');
+    const itemCat = item.category?.trim() || 'Youth Graduate';
+    if (DEFAULT_PRESET_CATEGORIES.includes(itemCat)) {
+      setFormCategory(itemCat);
+      setIsManualCategory(false);
+      setManualCategoryText('');
+    } else {
+      setFormCategory('__custom__');
+      setIsManualCategory(true);
+      setManualCategoryText(itemCat);
+    }
     setFormRating(item.rating ?? 5);
     setFormIsPublished(item.is_published !== false);
     setIsFormOpen(true);
@@ -277,6 +300,10 @@ export function TestimoniesModule({
       notify('Person name and English testimony quote are required.', true);
       return;
     }
+
+    const effectiveCategory = isManualCategory
+      ? (manualCategoryText.trim() || 'Beneficiary Participant')
+      : (formCategory === '__custom__' ? (manualCategoryText.trim() || 'Beneficiary Participant') : formCategory.trim());
 
     let nextItems: TestimonialItem[];
     if (editingId) {
@@ -292,7 +319,7 @@ export function TestimoniesModule({
             quote_sw: formQuoteSw.trim() || formQuoteEn.trim(),
             avatar_url: formAvatar.trim() || null,
             date_label: formDateLabel.trim(),
-            category: formCategory.trim(),
+            category: effectiveCategory,
             rating: formRating,
             is_published: formIsPublished,
           };
@@ -310,7 +337,7 @@ export function TestimoniesModule({
         quote_sw: formQuoteSw.trim() || formQuoteEn.trim(),
         avatar_url: formAvatar.trim() || null,
         date_label: formDateLabel.trim(),
-        category: formCategory.trim(),
+        category: effectiveCategory,
         rating: formRating,
         is_published: formIsPublished,
       };
@@ -664,22 +691,72 @@ export function TestimoniesModule({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
-                    Beneficiary / Contributor Category
-                  </label>
-                  <select
-                    value={formCategory}
-                    onChange={(e) => setFormCategory(e.target.value)}
-                    className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:outline-none focus:border-black bg-white"
-                  >
-                    <option value="Youth Graduate">Youth Graduate</option>
-                    <option value="Caregiver & Community Leader">Caregiver & Community Leader</option>
-                    <option value="HEART Arts Performer">HEART Arts Performer</option>
-                    <option value="Street Outreach Participant">Street Outreach Participant</option>
-                    <option value="Community Champion">Community Champion</option>
-                    <option value="Development Partner / Donor">Development Partner / Donor</option>
-                    <option value="Volunteer Mentor">Volunteer Mentor</option>
-                  </select>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider">
+                      Beneficiary / Contributor Category
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!isManualCategory) {
+                          setIsManualCategory(true);
+                          if (!manualCategoryText) {
+                            setManualCategoryText(formCategory !== '__custom__' ? formCategory : '');
+                          }
+                        } else {
+                          setIsManualCategory(false);
+                          if (DEFAULT_PRESET_CATEGORIES.includes(manualCategoryText.trim())) {
+                            setFormCategory(manualCategoryText.trim());
+                          } else {
+                            setFormCategory(DEFAULT_PRESET_CATEGORIES[0]);
+                          }
+                        }
+                      }}
+                      className="text-[11px] font-semibold text-[#b88000] hover:text-black underline cursor-pointer"
+                    >
+                      {isManualCategory ? '← Choose from Preset List' : '✍ Write Manually'}
+                    </button>
+                  </div>
+
+                  {isManualCategory ? (
+                    <div className="space-y-1">
+                      <input
+                        type="text"
+                        value={manualCategoryText}
+                        onChange={(e) => setManualCategoryText(e.target.value)}
+                        placeholder="e.g. Young Mother, Vocational Trainee, Foster Caregiver"
+                        className="w-full px-3 py-2 text-xs border border-[#E6A500] bg-amber-50/20 rounded-lg focus:outline-none focus:border-black font-medium"
+                        autoFocus
+                      />
+                      <p className="text-[10px] text-gray-500">
+                        Type any custom category name. This will display on the testimony badge.
+                      </p>
+                    </div>
+                  ) : (
+                    <select
+                      value={formCategory}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === '__custom__') {
+                          setIsManualCategory(true);
+                          setFormCategory('__custom__');
+                          if (!manualCategoryText) {
+                            setManualCategoryText('');
+                          }
+                        } else {
+                          setFormCategory(val);
+                        }
+                      }}
+                      className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:outline-none focus:border-black bg-white"
+                    >
+                      {DEFAULT_PRESET_CATEGORIES.map((cat) => (
+                        <option key={cat} value={cat}>
+                          {cat}
+                        </option>
+                      ))}
+                      <option value="__custom__">✍ Write Custom Category Manually...</option>
+                    </select>
+                  )}
                 </div>
               </div>
 
