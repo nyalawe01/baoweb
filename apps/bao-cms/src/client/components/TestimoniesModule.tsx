@@ -20,6 +20,8 @@ import {
   ArrowUp,
   ArrowDown,
   RotateCcw,
+  Upload,
+  Loader2,
 } from 'lucide-react';
 import { supabase } from '../supabase.js';
 import { type SweetAlertOptions } from './SweetAlertModal.js';
@@ -165,6 +167,7 @@ export function TestimoniesModule({
   const [formQuoteEn, setFormQuoteEn] = useState('');
   const [formQuoteSw, setFormQuoteSw] = useState('');
   const [formAvatar, setFormAvatar] = useState('');
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [formDateLabel, setFormDateLabel] = useState('');
   const [formCategory, setFormCategory] = useState('Youth Graduate');
   const [isManualCategory, setIsManualCategory] = useState(false);
@@ -281,6 +284,64 @@ export function TestimoniesModule({
     }
     setFormIsPublished(item.is_published !== false);
     setIsFormOpen(true);
+  };
+
+  // Upload Avatar / Photograph
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingAvatar(true);
+    showAlert?.({
+      type: 'loading',
+      title: 'Uploading Photograph...',
+      message: `Uploading ${file.name} to server media storage...`,
+    });
+
+    try {
+      const { data: sD } = await supabase.auth.getSession();
+      const token = sD?.session?.access_token || accessToken;
+
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('category', 'testimonials');
+      fd.append('visibility', 'public');
+      fd.append('title', `Testimony Photo - ${formName || 'Beneficiary'}`);
+      fd.append('alt_text', `Testimony Photo - ${formName || 'Beneficiary'}`);
+
+      const res = await fetch('/api/v1/media/upload', {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: fd,
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to upload photograph.');
+      }
+
+      const uploadedUrl =
+        data.media?.public_url || (data.media?.storage_key ? `/media/${data.media.storage_key}` : null);
+      if (uploadedUrl) {
+        setFormAvatar(uploadedUrl);
+        notify('Photograph uploaded successfully!');
+        showAlert?.({
+          type: 'success',
+          title: 'Photograph Uploaded!',
+          message: 'The photograph has been uploaded and attached to this testimony.',
+        });
+      }
+    } catch (err: any) {
+      notify(err.message || 'Image upload failed.', true);
+      showAlert?.({
+        type: 'error',
+        title: 'Upload Failed',
+        message: err.message || 'Could not upload testimony photograph.',
+      });
+    } finally {
+      setUploadingAvatar(false);
+      e.target.value = '';
+    }
   };
 
   // Submit Add / Edit
@@ -748,31 +809,65 @@ export function TestimoniesModule({
                 />
               </div>
 
-              {/* Avatar URL or Media Picker */}
-              <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
-                  Avatar / Photograph Image URL
+              {/* Avatar / Photograph Upload */}
+              <div className="space-y-2">
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider">
+                  Avatar / Photograph
                 </label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={formAvatar}
-                    onChange={(e) => setFormAvatar(e.target.value)}
-                    placeholder="e.g. /media/public/images/projects/WATOTO.webp or https://..."
-                    className="flex-1 px-3 py-2 text-xs border border-gray-300 rounded-lg focus:outline-none focus:border-black"
-                  />
-                  {formAvatar && (
-                    <img
-                      src={formAvatar}
-                      alt="Avatar preview"
-                      className="w-9 h-9 rounded-full object-cover border border-amber-300"
-                    />
-                  )}
+                <div className="flex items-center gap-4 p-3.5 bg-gray-50 rounded-xl border border-gray-200">
+                  <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-[#E6A500] bg-white shrink-0 flex items-center justify-center shadow-sm">
+                    {formAvatar ? (
+                      <img
+                        src={formAvatar}
+                        alt={formName || 'Avatar preview'}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-amber-100 flex items-center justify-center text-amber-800 font-bold text-lg">
+                        {formName ? formName.charAt(0).toUpperCase() : <User className="w-7 h-7 text-amber-600/60" />}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-1.5 flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <label className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#E6A500] hover:bg-[#d49700] text-black text-xs font-bold rounded-lg cursor-pointer transition">
+                        {uploadingAvatar ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Upload className="w-3.5 h-3.5" />
+                        )}
+                        <span>{uploadingAvatar ? 'Uploading Photo...' : 'Upload Photograph'}</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          disabled={uploadingAvatar}
+                          onChange={handleAvatarUpload}
+                        />
+                      </label>
+                      {formAvatar && (
+                        <button
+                          type="button"
+                          onClick={() => setFormAvatar('')}
+                          className="px-2.5 py-1.5 bg-white border border-gray-300 text-gray-600 hover:text-red-600 text-xs font-semibold rounded-lg transition cursor-pointer"
+                        >
+                          Remove Photo
+                        </button>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-gray-500 truncate">
+                      {formAvatar
+                        ? formAvatar
+                        : 'No photo uploaded. Click "Upload Photograph" to select a photo from your device.'}
+                    </p>
+                  </div>
                 </div>
+
                 {media && media.length > 0 && (
-                  <div className="mt-2 flex items-center gap-2 overflow-x-auto py-1">
-                    <span className="text-[11px] text-gray-400 whitespace-nowrap">Choose Media:</span>
-                    {media.slice(0, 5).map((m: any) => (
+                  <div className="flex items-center gap-2 overflow-x-auto py-1">
+                    <span className="text-[11px] text-gray-400 whitespace-nowrap">Or choose from Media Library:</span>
+                    {media.slice(0, 6).map((m: any) => (
                       <button
                         key={m.id}
                         type="button"
