@@ -847,12 +847,6 @@ export function App() {
 
           {/* Quick Actions & Live Indicator */}
           <div className="flex items-center gap-2.5">
-            {/* Live Status & Auto-Save */}
-            <div className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span>⚡ Auto-Save & Publish: <strong>Active</strong></span>
-            </div>
-
             {/* Refresh Button */}
             <button
               onClick={refreshAll}

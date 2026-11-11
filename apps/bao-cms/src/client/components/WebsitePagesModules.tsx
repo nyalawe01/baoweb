@@ -189,7 +189,6 @@ export function ProgrammesPageModule({
           </p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
-          <AutoSaveStatusBadge status={autoStatus} lastSaved={lastSaved} />
           <a
             href="http://localhost:3000/programmes"
             target="_blank"
@@ -261,7 +260,6 @@ export function ProgrammesPageModule({
         </div>
 
         <div className="pt-4 border-t border-gray-200 flex items-center justify-between flex-wrap gap-3">
-          <AutoSaveStatusBadge status={autoStatus} lastSaved={lastSaved} />
           <button
             type="submit"
             disabled={isSaving}
@@ -427,7 +425,6 @@ export function ProjectsPageModule({
           </p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
-          <AutoSaveStatusBadge status={autoStatus} lastSaved={lastSaved} />
           <a
             href="http://localhost:3000/projects"
             target="_blank"
@@ -499,7 +496,6 @@ export function ProjectsPageModule({
         </div>
 
         <div className="pt-4 border-t border-gray-200 flex items-center justify-between flex-wrap gap-3">
-          <AutoSaveStatusBadge status={autoStatus} lastSaved={lastSaved} />
           <button
             type="submit"
             disabled={isSaving}
@@ -667,7 +663,6 @@ export function NewsPageModule({
           </p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
-          <AutoSaveStatusBadge status={autoStatus} lastSaved={lastSaved} />
           <a
             href="http://localhost:3000/news"
             target="_blank"
@@ -727,7 +722,6 @@ export function NewsPageModule({
         </div>
 
         <div className="pt-4 border-t border-gray-200 flex items-center justify-between flex-wrap gap-3">
-          <AutoSaveStatusBadge status={autoStatus} lastSaved={lastSaved} />
           <button
             type="submit"
             disabled={isSaving}
@@ -903,7 +897,6 @@ export function PublicationsPageModule({
           </p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
-          <AutoSaveStatusBadge status={autoStatus} lastSaved={lastSaved} />
           <a
             href="http://localhost:3000/resources"
             target="_blank"
@@ -975,7 +968,6 @@ export function PublicationsPageModule({
         </div>
 
         <div className="pt-4 border-t border-gray-200 flex items-center justify-between flex-wrap gap-3">
-          <AutoSaveStatusBadge status={autoStatus} lastSaved={lastSaved} />
           <button
             type="submit"
             disabled={isSaving}
@@ -1150,7 +1142,6 @@ export function GetInvolvedPageModule({
           </p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
-          <AutoSaveStatusBadge status={autoStatus} lastSaved={lastSaved} />
           <a
             href="http://localhost:3000/get-involved"
             target="_blank"
@@ -1222,7 +1213,6 @@ export function GetInvolvedPageModule({
         </div>
 
         <div className="pt-4 border-t border-gray-200 flex items-center justify-between flex-wrap gap-3">
-          <AutoSaveStatusBadge status={autoStatus} lastSaved={lastSaved} />
           <button
             type="submit"
             disabled={isSaving}
@@ -1588,7 +1578,6 @@ export function ContactPageModule({
           </p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
-          <AutoSaveStatusBadge status={autoStatus} lastSaved={lastSaved} />
           <a
             href="http://localhost:3000/contact"
             target="_blank"
@@ -1968,7 +1957,6 @@ export function ContactPageModule({
         </div>
 
         <div className="pt-4 border-t border-gray-200 flex items-center justify-between flex-wrap gap-3">
-          <AutoSaveStatusBadge status={autoStatus} lastSaved={lastSaved} />
           <button
             type="submit"
             disabled={isSaving}

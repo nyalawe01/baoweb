@@ -326,7 +326,6 @@ export function VisionAndMissionModule({
           </p>
         </div>
         <div className="flex items-center gap-3 shrink-0 flex-wrap">
-          <AutoSaveStatusBadge status={autoStatus} lastSaved={lastSaved} />
           <a
             href="http://localhost:3000/mission-vision"
             target="_blank"
@@ -778,7 +777,6 @@ export function OurHistoryModule({
           </p>
         </div>
         <div className="flex items-center gap-3 shrink-0 flex-wrap">
-          <AutoSaveStatusBadge status={autoStatus} lastSaved={lastSaved} />
           <a
             href="http://localhost:3000/our-history"
             target="_blank"
@@ -1274,7 +1272,6 @@ export function LeadershipAndGovernanceModule({
           </p>
         </div>
         <div className="flex items-center gap-3 shrink-0 flex-wrap">
-          <AutoSaveStatusBadge status={autoStatus} lastSaved={lastSaved} />
           <a
             href="http://localhost:3000/leadership-governance"
             target="_blank"
@@ -1864,7 +1861,6 @@ export function AboutStreetChildrenModule({
           </p>
         </div>
         <div className="flex items-center gap-3 shrink-0 flex-wrap">
-          <AutoSaveStatusBadge status={autoStatus} lastSaved={lastSaved} />
           <a
             href="http://localhost:3000/about-street-children"
             target="_blank"
