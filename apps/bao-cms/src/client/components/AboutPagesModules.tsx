@@ -1741,30 +1741,6 @@ export function AboutStreetChildrenModule({
     isConfigured ? (ascVal.context_image ?? '') : ''
   );
 
-  // 3. Three Protection Pillars
-  const [pillars, setPillars] = useState<Array<{ title: string; body: string; img: string }>>(
-    isConfigured && Array.isArray(ascVal.pillars) ? ascVal.pillars : []
-  );
-
-  // 4. Commemorative Spotlight
-  const [spotlightBadge, setSpotlightBadge] = useState(
-    isConfigured ? (ascVal.spotlight_badge ?? '') : ''
-  );
-  const [spotlightHeading, setSpotlightHeading] = useState(
-    isConfigured ? (ascVal.spotlight_heading ?? '') : ''
-  );
-  const [spotlightText, setSpotlightText] = useState(
-    isConfigured
-      ? stripHtmlForEditing(ascVal.spotlight_text ?? '')
-      : ''
-  );
-  const [spotlightImage, setSpotlightImage] = useState(
-    isConfigured ? (ascVal.spotlight_image ?? '') : ''
-  );
-  const [spotlightCaption, setSpotlightCaption] = useState(
-    isConfigured ? (ascVal.spotlight_caption ?? '') : ''
-  );
-
   useEffect(() => {
     if (existingSetting) {
       const v = getSettingValue(existingSetting);
@@ -1777,21 +1753,9 @@ export function AboutStreetChildrenModule({
         if (v.context_heading !== undefined) setContextHeading(v.context_heading);
         if (v.context_text !== undefined) setContextText(stripHtmlForEditing(v.context_text));
         if (v.context_image !== undefined) setContextImage(v.context_image);
-        if (Array.isArray(v.pillars)) setPillars(v.pillars);
-        if (v.spotlight_badge !== undefined) setSpotlightBadge(v.spotlight_badge);
-        if (v.spotlight_heading !== undefined) setSpotlightHeading(v.spotlight_heading);
-        if (v.spotlight_text !== undefined) setSpotlightText(stripHtmlForEditing(v.spotlight_text));
-        if (v.spotlight_image !== undefined) setSpotlightImage(v.spotlight_image);
-        if (v.spotlight_caption !== undefined) setSpotlightCaption(v.spotlight_caption);
       }
     }
   }, [siteSettings]);
-
-  const handleUpdatePillar = (idx: number, field: 'title' | 'body' | 'img', val: string) => {
-    const next = [...pillars];
-    next[idx] = { ...next[idx], [field]: val };
-    setPillars(next);
-  };
 
   const handleSave = async (isManual = true) => {
     if (isManual) {
@@ -1799,7 +1763,7 @@ export function AboutStreetChildrenModule({
       showAlert?.({
         type: 'loading',
         title: 'Saving About Street Children...',
-        message: 'Writing narrative, pillars, and protection context to database...',
+        message: 'Writing narrative and protection context to database...',
       });
     } else {
       setAutoStatus('saving');
@@ -1815,12 +1779,6 @@ export function AboutStreetChildrenModule({
         context_heading: contextHeading.trim(),
         context_text: contextText.trim(),
         context_image: contextImage.trim(),
-        pillars: pillars,
-        spotlight_badge: spotlightBadge.trim(),
-        spotlight_heading: spotlightHeading.trim(),
-        spotlight_text: spotlightText.trim(),
-        spotlight_image: spotlightImage.trim(),
-        spotlight_caption: spotlightCaption.trim(),
       };
 
       const { error } = await supabase.from('site_settings').upsert(
@@ -1890,12 +1848,6 @@ export function AboutStreetChildrenModule({
     contextHeading,
     contextText,
     contextImage,
-    pillars,
-    spotlightBadge,
-    spotlightHeading,
-    spotlightText,
-    spotlightImage,
-    spotlightCaption,
   ]);
 
   return (
@@ -2018,118 +1970,6 @@ export function AboutStreetChildrenModule({
             placeholder="Type context paragraphs here..."
             className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg text-black bg-white leading-relaxed font-medium"
           />
-        </div>
-      </div>
-
-      {/* 3. Three Protection Pillars */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-5 shadow-none">
-        <div className="border-b border-slate-100 pb-2">
-          <h3 className="font-bold text-sm text-black flex items-center gap-2">
-            <Heart className="w-4 h-4 text-amber-600" /> 3. Core Protection Pillars (3 Cards)
-          </h3>
-          <p className="text-xs text-slate-500 mt-0.5">
-            These render as 3 key pillar cards illustrating Babawatoto's direct intervention model.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {pillars.map((pil, idx) => (
-            <div key={idx} className="p-4 rounded-xl border border-slate-200 bg-white space-y-3 shadow-none">
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-100 text-amber-900 font-bold">
-                Pillar #{idx + 1}
-              </span>
-              <div>
-                <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">Pillar Title</label>
-                <input
-                  type="text"
-                  value={pil.title}
-                  onChange={(e) => handleUpdatePillar(idx, 'title', e.target.value)}
-                  className="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg text-black bg-white font-bold"
-                />
-              </div>
-              <div>
-                <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">Image URL</label>
-                <input
-                  type="text"
-                  value={pil.img}
-                  onChange={(e) => handleUpdatePillar(idx, 'img', e.target.value)}
-                  className="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg text-black bg-white"
-                />
-              </div>
-              <div>
-                <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">Description</label>
-                <textarea
-                  rows={3}
-                  value={pil.body}
-                  onChange={(e) => handleUpdatePillar(idx, 'body', e.target.value)}
-                  className="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg text-black bg-white leading-relaxed"
-                />
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* 4. Commemorative Spotlight */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-4 shadow-none">
-        <h3 className="font-bold text-sm text-black border-b border-slate-100 pb-2 flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-amber-600" /> 4. Commemorative Story & Impact Spotlight
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs font-bold text-black uppercase mb-1">Spotlight Badge</label>
-            <input
-              type="text"
-              value={spotlightBadge}
-              onChange={(e) => setSpotlightBadge(e.target.value)}
-              placeholder="Commemorative Spotlight"
-              className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg text-black bg-white"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-bold text-black uppercase mb-1">Spotlight Heading</label>
-            <input
-              type="text"
-              value={spotlightHeading}
-              onChange={(e) => setSpotlightHeading(e.target.value)}
-              placeholder="Restoring Hope, Upholding Inherent Human Dignity"
-              className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg text-black bg-white font-bold"
-            />
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-xs font-bold text-black uppercase mb-1">Spotlight Narrative (Text Area)</label>
-          <textarea
-            rows={4}
-            value={spotlightText}
-            onChange={(e) => setSpotlightText(e.target.value)}
-            placeholder="Type commemorative narrative here..."
-            className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg text-black bg-white leading-relaxed font-medium"
-          />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs font-bold text-black uppercase mb-1">Spotlight Image URL</label>
-            <input
-              type="text"
-              value={spotlightImage}
-              onChange={(e) => setSpotlightImage(e.target.value)}
-              placeholder="/media/public/images/organization/hero1.webp"
-              className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg text-black bg-white"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-bold text-black uppercase mb-1">Image Caption</label>
-            <input
-              type="text"
-              value={spotlightCaption}
-              onChange={(e) => setSpotlightCaption(e.target.value)}
-              placeholder="Children gathered in community reflection and empowerment sessions."
-              className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg text-black bg-white"
-            />
-          </div>
         </div>
       </div>
     </div>

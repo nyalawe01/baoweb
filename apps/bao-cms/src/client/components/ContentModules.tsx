@@ -913,24 +913,24 @@ export function ProjectsModule({
   return (
     <div className="space-y-6">
       {/* Row 1: Recorded Projects (Full Width) */}
-      <div className="w-full bg-white rounded-xl border border-[#E6A500] p-5 space-y-3 shadow-xs">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#E6A500]/30 pb-3">
+      <div className="w-full bg-white rounded-xl border border-slate-200 p-5 space-y-4 shadow-none">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
           <div>
-            <h3 className="font-bold text-base text-[#000000] flex items-center gap-2">
-              <FolderKanban className="w-4 h-4 text-[#E6A500]" /> Projects ({projects.length})
+            <h3 className="font-bold text-base text-slate-900 flex items-center gap-2">
+              <FolderKanban className="w-4 h-4 text-slate-700" /> Projects ({projects.length})
             </h3>
-            <p className="text-xs text-[#555B57]">Click any project to load into editor below. Star up to 3 projects to display on the Homepage.</p>
+            <p className="text-xs text-slate-500">Click any project to load into editor below. Star up to 3 projects to display on the Homepage.</p>
           </div>
           <div className="flex items-center gap-3">
-            <div className="px-3 py-1.5 bg-[#E6A500]/15 border border-[#E6A500] text-xs font-bold text-black flex items-center gap-2 rounded-lg">
+            <div className="px-3 py-1.5 bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 flex items-center gap-2 rounded-lg">
               <span>Homepage Priority:</span>
-              <span className="px-2 py-0.5 bg-[#E6A500] text-black font-extrabold rounded">
+              <span className="px-2 py-0.5 bg-slate-900 text-white font-bold rounded text-[11px]">
                 {priorityCount} / 3 Selected
               </span>
             </div>
             <button
               onClick={resetForm}
-              className="text-xs px-4 py-2 rounded-lg bg-[#E6A500] text-black font-bold flex items-center gap-1.5 cursor-pointer shadow-xs"
+              className="text-xs px-3.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold flex items-center gap-1.5 cursor-pointer transition shadow-none"
             >
               <Plus className="w-3.5 h-3.5" /> + New Project
             </button>
@@ -945,29 +945,29 @@ export function ProjectsModule({
                 onClick={() => selectProject(p)}
                 className={`p-3 rounded-lg border cursor-pointer transition space-y-2 ${
                   editingId === p.id
-                    ? 'border-2 border-[#E6A500] bg-[#E6A500]/10'
-                    : 'border-[#E6A500]/40 hover:border-[#E6A500] bg-white'
+                    ? 'border-2 border-slate-900 bg-slate-50'
+                    : 'border border-slate-200 hover:border-slate-300 bg-white'
                 }`}
               >
                 <div className="flex items-center justify-between gap-2">
-                  <span className="font-bold text-sm text-[#000000]">
+                  <span className="font-bold text-sm text-slate-900">
                     {enT?.title || 'Untitled Project'}
                   </span>
-                  <span className="text-[11px] uppercase font-bold px-2 py-0.5 rounded bg-[#E6A500]/20 text-black">
+                  <span className="text-[10px] uppercase font-semibold px-2 py-0.5 rounded bg-slate-100 border border-slate-200 text-slate-700">
                     {p.project_status} · {p.status}
                   </span>
                 </div>
-                <p className="text-xs text-black/80 line-clamp-2">
+                <p className="text-xs text-slate-600 line-clamp-2">
                   {enT?.summary || enT?.short_description}
                 </p>
                 <div className="pt-1 flex items-center justify-between">
                   <button
                     type="button"
                     onClick={(e) => handleTogglePriority(e, p)}
-                    className={`text-xs font-extrabold px-2.5 py-1 border transition cursor-pointer ${
+                    className={`text-xs font-semibold px-2.5 py-1 rounded-md border transition cursor-pointer ${
                       p.is_featured
-                        ? 'bg-[#E6A500] border-[#E6A500] text-black'
-                        : 'bg-white border-[#E6A500] text-black hover:bg-[#E6A500]/20'
+                        ? 'bg-slate-900 border-slate-900 text-white'
+                        : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
                     }`}
                   >
                     {p.is_featured ? '★ Priority Project (Top 3)' : '☆ Set as Priority Project'}
@@ -977,25 +977,24 @@ export function ProjectsModule({
             );
           })}
           {projects.length === 0 && (
-            <p className="text-xs text-black/75 py-8 text-center">
-              No projects recorded yet. Click "+ New" or use "System & Seed" to load the 3 verified
-              priority projects.
+            <p className="text-xs text-slate-500 py-8 text-center col-span-3">
+              No projects recorded yet. Click "+ New Project" to create one.
             </p>
           )}
         </div>
       </div>
 
       {/* Row 2: Project Editor Form (Full Width) */}
-      <div className="w-full bg-white rounded-xl border border-[#E6A500] p-6 space-y-4 shadow-xs">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#E6A500]/40 pb-4">
-          <h3 className="font-bold text-lg text-[#000000]">
+      <div className="w-full bg-white rounded-xl border border-slate-200 p-6 space-y-4 shadow-none">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
+          <h3 className="font-bold text-base text-slate-900">
             {editingId ? 'Edit Project' : 'Create Project'}
           </h3>
           <div className="flex items-center gap-2">
             <button
               onClick={handleSave}
               disabled={saving}
-              className="px-5 py-2.5 rounded-lg bg-[#E6A500] hover:bg-[#d49700] disabled:opacity-50 text-black text-xs font-extrabold flex items-center gap-2 cursor-pointer shadow-xs transition"
+              className="px-4 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white text-xs font-semibold flex items-center gap-2 cursor-pointer shadow-none transition"
             >
               {saving ? (
                 <>
@@ -1011,22 +1010,22 @@ export function ProjectsModule({
         </div>
 
         {/* Priority Project Toggle Banner */}
-        <div className="p-4 bg-[#E6A500]/15 border-2 border-[#E6A500] flex flex-wrap items-center justify-between gap-4">
+        <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl flex flex-wrap items-center justify-between gap-4">
           <div>
-            <div className="font-extrabold text-sm text-black">
+            <div className="font-bold text-sm text-slate-900">
               ★ Priority Project (Show in Homepage 3 Hover-Flip Cards)
             </div>
-            <div className="text-xs text-black/80">
+            <div className="text-xs text-slate-600 mt-0.5">
               Enable this to feature this project as one of the 3 flipping priority project cards on
               the public homepage right below the About Us summary.
             </div>
           </div>
-          <label className="inline-flex items-center gap-2.5 px-4 py-2 bg-white border-2 border-[#E6A500] font-extrabold text-sm text-black cursor-pointer">
+          <label className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-900 cursor-pointer shadow-2xs">
             <input
               type="checkbox"
               checked={isFeatured}
               onChange={(e) => setIsFeatured(e.target.checked)}
-              className="w-4 h-4 accent-[#E6A500]"
+              className="w-4 h-4 accent-slate-900"
             />
             <span>{isFeatured ? 'Priority Project: YES' : 'Priority Project: NO'}</span>
           </label>
@@ -1034,11 +1033,11 @@ export function ProjectsModule({
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div>
-            <label className="block text-xs font-semibold mb-1">Project Lifecycle</label>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">Project Lifecycle</label>
             <select
               value={projectStatus}
               onChange={(e) => setProjectStatus(e.target.value as any)}
-              className="w-full px-3 py-2 rounded-lg border border-[#E5E7E5] text-sm"
+              className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-900 text-sm focus:outline-none focus:border-slate-400"
             >
               <option value="active">active</option>
               <option value="completed">completed</option>
@@ -1046,11 +1045,11 @@ export function ProjectsModule({
             </select>
           </div>
           <div>
-            <label className="block text-xs font-semibold mb-1">Featured Image</label>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">Featured Image</label>
             <select
               value={featuredImageId}
               onChange={(e) => setFeaturedImageId(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border border-[#E5E7E5] text-sm"
+              className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-900 text-sm focus:outline-none focus:border-slate-400"
             >
               <option value="">-- None --</option>
               {media
@@ -1063,11 +1062,11 @@ export function ProjectsModule({
             </select>
           </div>
           <div>
-            <label className="block text-xs font-semibold mb-1">Publish Status</label>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">Publish Status</label>
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value as PublicationStatus)}
-              className="w-full px-3 py-2 rounded-lg border border-[#E5E7E5] text-sm"
+              className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-900 text-sm focus:outline-none focus:border-slate-400"
             >
               {PUBLICATION_STATUSES.map((s) => (
                 <option key={s} value={s}>
@@ -1083,14 +1082,14 @@ export function ProjectsModule({
           const selectedMedia = media.find((m) => m.id === featuredImageId);
           const previewUrl = selectedMedia?.public_url || (selectedMedia?.storage_path ? `/media/${selectedMedia.storage_path}` : '');
           return (
-            <div className="p-4 rounded-xl border-2 border-[#E6A500] bg-amber-50/40 space-y-3">
+            <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/60 space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <div className="font-extrabold text-sm text-black flex items-center gap-2">
-                    <ImageIcon className="w-4 h-4 text-[#E6A500]" />
+                  <div className="font-bold text-sm text-slate-900 flex items-center gap-2">
+                    <ImageIcon className="w-4 h-4 text-slate-700" />
                     Dedicated Project Image (Upload Unique Photo)
                   </div>
-                  <div className="text-xs text-black/70">
+                  <div className="text-xs text-slate-500">
                     Upload a dedicated, high-resolution photo for this project. Images must not be shared between different projects.
                   </div>
                 </div>
@@ -1106,7 +1105,7 @@ export function ProjectsModule({
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={uploadingImage}
-                    className="px-3.5 py-2 rounded-lg bg-[#E6A500] hover:bg-[#d49700] text-black font-extrabold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs transition"
+                    className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs flex items-center gap-1.5 cursor-pointer shadow-none transition"
                   >
                     <Upload className="w-4 h-4" />
                     {uploadingImage ? 'Uploading...' : 'Upload Dedicated Image'}
@@ -1115,7 +1114,7 @@ export function ProjectsModule({
                     <button
                       type="button"
                       onClick={() => setFeaturedImageId('')}
-                      className="px-2.5 py-2 rounded-lg bg-white border border-gray-300 text-xs text-red-600 hover:bg-red-50 font-semibold cursor-pointer"
+                      className="px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 text-xs text-rose-600 hover:bg-rose-50 font-semibold cursor-pointer"
                     >
                       Clear Image
                     </button>
@@ -1124,20 +1123,20 @@ export function ProjectsModule({
               </div>
 
               {previewUrl ? (
-                <div className="flex items-center gap-4 bg-white p-3 rounded-lg border border-gray-200">
+                <div className="flex items-center gap-4 bg-white p-3 rounded-lg border border-slate-200">
                   <img
                     src={previewUrl}
                     alt="Project dedicated preview"
-                    className="w-24 h-20 object-cover rounded-lg border border-gray-300 shadow-xs"
+                    className="w-24 h-20 object-cover rounded-lg border border-slate-200 shadow-2xs"
                   />
                   <div className="text-xs space-y-1">
-                    <p className="font-bold text-black">{selectedMedia?.title || selectedMedia?.original_filename || 'Uploaded Dedicated Image'}</p>
-                    <p className="text-gray-500 font-mono text-[11px]">ID: {featuredImageId}</p>
+                    <p className="font-bold text-slate-900">{selectedMedia?.title || selectedMedia?.original_filename || 'Uploaded Dedicated Image'}</p>
+                    <p className="text-slate-500 font-mono text-[11px]">ID: {featuredImageId}</p>
                     <p className="text-emerald-700 font-semibold">✓ Unique dedicated image attached to this project</p>
                   </div>
                 </div>
               ) : (
-                <div className="text-xs text-amber-900 bg-amber-100/60 p-2.5 rounded-lg border border-amber-300 flex items-center gap-2">
+                <div className="text-xs text-slate-600 bg-white p-3 rounded-lg border border-slate-200 flex items-center gap-2">
                   <span>ℹ No dedicated image assigned yet. Click <strong>"Upload Dedicated Image"</strong> to upload a unique photo directly from your device.</span>
                 </div>
               )}
@@ -1147,7 +1146,7 @@ export function ProjectsModule({
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-semibold mb-1">Title ({lang.toUpperCase()})</label>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">Title ({lang.toUpperCase()})</label>
             <input
               value={cur.title}
               onChange={(e) => {
@@ -1163,11 +1162,11 @@ export function ProjectsModule({
                   [lang]: { ...prev[lang], title, slug },
                 }));
               }}
-              className="w-full px-3 py-2 rounded-lg border border-[#E5E7E5] text-sm"
+              className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-900 text-sm focus:outline-none focus:border-slate-400"
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold mb-1">Slug ({lang.toUpperCase()})</label>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">Slug ({lang.toUpperCase()})</label>
             <input
               value={cur.slug}
               onChange={(e) =>
@@ -1176,13 +1175,13 @@ export function ProjectsModule({
                   [lang]: { ...prev[lang], slug: e.target.value },
                 }))
               }
-              className="w-full px-3 py-2 rounded-lg border border-[#E5E7E5] text-sm font-mono"
+              className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-900 text-sm font-mono focus:outline-none focus:border-slate-400"
             />
           </div>
         </div>
 
         <div>
-          <label className="block text-xs font-semibold mb-1">Summary ({lang.toUpperCase()})</label>
+          <label className="block text-xs font-semibold text-slate-700 mb-1">Summary ({lang.toUpperCase()})</label>
           <textarea
             rows={2}
             value={cur.summary}
@@ -1192,16 +1191,16 @@ export function ProjectsModule({
                 [lang]: { ...prev[lang], summary: e.target.value },
               }))
             }
-            className="w-full px-3 py-2 rounded-lg border border-[#E5E7E5] text-sm"
+            className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-900 text-sm focus:outline-none focus:border-slate-400"
           />
         </div>
 
         <div>
           <div className="flex items-center justify-between mb-1">
-            <label className="block text-xs font-semibold text-black">
+            <label className="block text-xs font-semibold text-slate-700">
               Project Background & Context ({lang.toUpperCase()})
             </label>
-            <span className="text-[11px] text-[#555B57]">Plain Text</span>
+            <span className="text-[11px] text-slate-400">Plain Text</span>
           </div>
           <textarea
             rows={4}
@@ -1213,16 +1212,16 @@ export function ProjectsModule({
               }))
             }
             placeholder="Enter background and context in normal text..."
-            className="w-full px-3 py-2 rounded-lg border border-[#E5E7E5] text-sm leading-relaxed"
+            className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-900 text-sm leading-relaxed focus:outline-none focus:border-slate-400"
           />
         </div>
 
         <div>
           <div className="flex items-center justify-between mb-1">
-            <label className="block text-xs font-semibold text-black">
+            <label className="block text-xs font-semibold text-slate-700">
               Key Activities & Implementation ({lang.toUpperCase()})
             </label>
-            <span className="text-[11px] text-[#555B57]">Plain Text</span>
+            <span className="text-[11px] text-slate-400">Plain Text</span>
           </div>
           <textarea
             rows={4}
@@ -1234,15 +1233,15 @@ export function ProjectsModule({
               }))
             }
             placeholder="Enter key activities in normal text..."
-            className="w-full px-3 py-2 rounded-lg border border-[#E5E7E5] text-sm leading-relaxed"
+            className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-900 text-sm leading-relaxed focus:outline-none focus:border-slate-400"
           />
         </div>
         <div>
           <div className="flex items-center justify-between mb-1">
-            <label className="block text-xs font-semibold text-black">
+            <label className="block text-xs font-semibold text-slate-700">
               Measurable Outcomes & Results ({lang.toUpperCase()})
             </label>
-            <span className="text-[11px] text-[#555B57]">Plain Text</span>
+            <span className="text-[11px] text-slate-400">Plain Text</span>
           </div>
           <textarea
             rows={3}
@@ -1254,30 +1253,30 @@ export function ProjectsModule({
               }))
             }
             placeholder="Enter project outcomes and measurable achievements in normal text..."
-            className="w-full px-3 py-2 rounded-lg border border-[#E5E7E5] text-sm leading-relaxed"
+            className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-900 text-sm leading-relaxed focus:outline-none focus:border-slate-400"
           />
         </div>
 
         <div>
-          <label className="block text-xs font-semibold mb-1">
+          <label className="block text-xs font-semibold text-slate-700 mb-1">
             Partners (comma-separated)
           </label>
           <input
             value={implementingPartners}
             onChange={(e) => setImplementingPartners(e.target.value)}
             placeholder="e.g. Municipal Social Welfare, Foundation for Civil Society, UNICEF"
-            className="w-full px-3 py-2 rounded-lg border border-[#E5E7E5] text-sm"
+            className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-900 text-sm focus:outline-none focus:border-slate-400"
           />
         </div>
 
-        <div className="pt-4 border-t border-[#E6A500]/30 flex items-center justify-between">
-          <p className="text-xs text-black/70">
+        <div className="pt-4 border-t border-slate-100 flex items-center justify-between flex-wrap gap-3">
+          <p className="text-xs text-slate-500">
             Click <strong>Save Project</strong> to store all changes in Supabase and publish live to the public website.
           </p>
           <button
             onClick={handleSave}
             disabled={saving}
-            className="px-6 py-3 rounded-xl bg-[#E6A500] hover:bg-[#d49700] disabled:opacity-50 text-black text-sm font-extrabold flex items-center gap-2 cursor-pointer shadow-md transition"
+            className="px-5 py-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white text-xs font-bold flex items-center gap-2 cursor-pointer shadow-none transition"
           >
             {saving ? (
               <>
