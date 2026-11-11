@@ -1,0 +1,33 @@
+{
+  "name": "baoweb-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Babawatoto Organization (BAO) Database-Driven Public Website & Custom Administrative CMS",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev:website": "npm --workspace=@bao/website run dev",
+    "dev:cms": "npm --workspace=@bao/cms run dev",
+    "build": "npm --workspace=@bao/shared run build && npm --workspace=@bao/website run build && npm --workspace=@bao/cms run build",
+    "start:website": "npm --workspace=@bao/website run start",
+    "start:cms": "npm --workspace=@bao/cms run start",
+    "test": "vitest run",
+    "typecheck": "npm --workspace=@bao/shared run typecheck && npm --workspace=@bao/website run typecheck && npm --workspace=@bao/cms run typecheck"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/multer": "^1.4.12",
+    "@types/node": "^22.10.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@types/supertest": "^6.0.2",
+    "@vitejs/plugin-react": "^4.3.4",
+    "supertest": "^7.0.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.5",
+    "vitest": "^2.1.8"
+  }
+}

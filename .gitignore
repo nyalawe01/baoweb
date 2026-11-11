@@ -1,0 +1,22 @@
+# Node & build artifacts
+node_modules/
+dist/
+.vite/
+*.tsbuildinfo
+
+# Environment variables & secrets (Never commit)
+.env
+.env.local
+.env.production
+
+# Temporary uploads
+bao-cms-storage/temporary/
+bao-cms-storage/private/
+
+# Scratch & development experiments
+scratch/
+
+# Logs
+logs/
+*.log
+

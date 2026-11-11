@@ -1,0 +1,225 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Barlow', system-ui, -apple-system, sans-serif;
+  --text-xs: 15px;
+  --text-sm: 18px;
+  --text-base: 18px;
+  --text-lg: 21px;
+  --text-xl: 24px;
+  --text-2xl: 28px;
+  --text-3xl: 34px;
+  --text-4xl: 42px;
+  --text-5xl: 52px;
+  --radius-xs: 2px;
+  --radius-sm: 2px;
+  --radius-md: 2px;
+  --radius-lg: 3px;
+  --radius-xl: 3px;
+  --radius-2xl: 4px;
+  --radius-3xl: 4px;
+}
+
+@layer base {
+  body {
+    font-family: 'Barlow', system-ui, -apple-system, sans-serif;
+    background-color: #FFFFFF;
+    color: #000000;
+    font-size: 18px;
+    line-height: 1.65;
+  }
+
+  h1 {
+    font-family: 'Barlow', sans-serif;
+    font-size: clamp(36px, 4.5vw, 54px);
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+  }
+
+  h2 {
+    font-family: 'Barlow', sans-serif;
+    font-size: clamp(28px, 3.2vw, 38px);
+    font-weight: 800;
+    line-height: 1.22;
+    letter-spacing: -0.01em;
+  }
+
+  h3 {
+    font-family: 'Barlow', sans-serif;
+    font-size: clamp(22px, 2.2vw, 27px);
+    font-weight: 700;
+    line-height: 1.3;
+  }
+
+  h4 {
+    font-family: 'Barlow', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1.35;
+  }
+
+  p {
+    font-family: 'Barlow', sans-serif;
+    font-size: 18px;
+    font-weight: 400;
+    line-height: 1.7;
+  }
+}
+
+.bao-nav-link {
+  font-family: 'Barlow', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 26px;
+  letter-spacing: 0.16px;
+  color: #000000;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 2px;
+  transition: background-color 0.2s ease;
+}
+
+.bao-nav-link:hover {
+  color: #000000;
+  background-color: #F2F2F2;
+}
+
+.bao-nav-link::after {
+  content: '';
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 2px;
+  height: 2px;
+  width: 0%;
+  background-color: #000000;
+  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.bao-nav-link-active {
+  background-color: #F2F2F2;
+}
+
+.bao-nav-link-active::after {
+  width: calc(100% - 24px);
+}
+
+@keyframes marquee {
+  0% {
+    transform: translate3d(0%, 0, 0);
+  }
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+.animate-marquee {
+  display: flex;
+  width: max-content;
+  will-change: transform;
+  animation: marquee 26s linear infinite;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+
+/* 3D Hover Flip Cards for Priority Projects */
+.bao-flip-card {
+  perspective: 1200px;
+}
+
+.bao-flip-card-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.65s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-style: preserve-3d;
+}
+
+.bao-flip-card:hover .bao-flip-card-inner,
+.bao-flip-card:focus-within .bao-flip-card-inner {
+  transform: rotateY(180deg);
+}
+
+.bao-flip-card-front,
+.bao-flip-card-back {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+.bao-flip-card-back {
+  transform: rotateY(180deg);
+}
+
+
+/* ------------------------------------------------------------------
+ * Bordered Button Design with Right-to-Left Orange Slide Hover
+ * Initial state: white background, orange border, black text.
+ * Hover: orange fill slides in from the right edge to the left.
+ * Unhover: orange fill slides back out to the right (same animation).
+ * ------------------------------------------------------------------ */
+.bao-btn {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background-color: #ffffff !important;
+  border: 1px solid #e6a500 !important;
+  color: #000000 !important;
+  border-radius: 2rem !important;
+  cursor: pointer;
+  transition: border-color 0.45s ease;
+}
+
+.bao-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-color: #e6a500;
+  transform: scaleX(0);
+  transform-origin: right center;
+  transition: transform 0.45s cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+.bao-btn:hover::before,
+.bao-btn:focus-visible::before {
+  transform: scaleX(1);
+}
+
+.bao-btn > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* ------------------------------------------------------------------
+ * Testimonials Section (soft gradient corners + bordered rounded cards)
+ * ------------------------------------------------------------------ */
+.bao-testimonial-glow-tl,
+.bao-testimonial-glow-br {
+  position: absolute;
+  width: 520px;
+  height: 520px;
+  pointer-events: none;
+  filter: blur(10px);
+}
+
+.bao-testimonial-glow-tl {
+  top: -160px;
+  left: -160px;
+  background: radial-gradient(circle, rgba(230, 165, 0, 0.22) 0%, rgba(230, 165, 0, 0) 70%);
+}
+
+.bao-testimonial-glow-br {
+  bottom: -180px;
+  right: -180px;
+  background: radial-gradient(circle, rgba(230, 165, 0, 0.18) 0%, rgba(230, 165, 0, 0) 70%);
+}
