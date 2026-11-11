@@ -1382,6 +1382,7 @@ export function App() {
               projects={projects}
               programmes={programmes}
               media={media}
+              siteSettings={siteSettings}
               canPublish={canPublish}
               onRefresh={refreshAll}
               notify={notify}
@@ -1450,6 +1451,8 @@ export function App() {
             <ResourcesAndImpactModule
               publications={publications}
               indicators={indicators}
+              projects={projects}
+              siteSettings={siteSettings}
               media={media}
               canPublish={canPublish}
               onRefresh={refreshAll}

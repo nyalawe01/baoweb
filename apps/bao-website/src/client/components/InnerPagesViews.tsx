@@ -751,6 +751,7 @@ export function AboutView({
     const spotlightCaption = ascData.spotlight_caption || "";
     return (
       <StandardPageTemplate
+        pageKey="street-children"
         pageTitle={pageTitle}
         pageBadge={pageBadge}
         heroImage={heroImage}
@@ -915,6 +916,7 @@ export function AboutView({
     const leadDescription = tr.subtitle || "Babawatoto Centre for Children and Youth Trust (BAO) operates under a clear, evidence-based strategic framework designed to protect vulnerable children, restore emotional well-being, and rebuild resilient family foundations across Tanzania. Our mission and vision guide every field outreach and community programme.";
     return (
       <StandardPageTemplate
+        pageKey="vision-mission"
         pageTitle={pageTitle}
         pageBadge={pageBadge}
         heroImage={heroImage}
@@ -1351,6 +1353,7 @@ export function AboutView({
     : (lang === 'en' ? (org.mission_en || 'To protect, educate, and empower vulnerable children, street-connected youth, and families through holistic social work, creative arts, quality education, and sustainable livelihoods.') : (org.mission_sw || ''));
   return (
     <StandardPageTemplate
+      pageKey="about"
       pageTitle={currentTitle}
       pageBadge={currentBadge}
       heroImage={currentHeroImage}
@@ -1577,7 +1580,10 @@ export function ProjectsView({
     // Specific metrics for this project
     const projectSlugKey = (tr?.slug || slug).toLowerCase();
     const customProjectMetrics =
-      projSettings.project_metrics?.[projectSlugKey] || projSettings.project_metrics?.[slug];
+      projSettings.project_metrics?.[projectSlugKey] ||
+      projSettings.project_metrics?.[slug] ||
+      siteData.settings?.page_metrics?.[`project-${projectSlugKey}`] ||
+      siteData.settings?.page_metrics?.[`project-${slug}`];
     const projectAchievements: Array<{
       type: 'youth reached' | 'locations' | 'emergency respondent' | 'beneficiaries' | 'hospitals' | 'partners';
       number: number;
@@ -2052,58 +2058,86 @@ export function ImpactView({ lang, siteData }: { lang: LanguageCode; siteData: a
       </section>
       <div className="max-w-7xl mx-auto px-4 space-y-14">
       <SectionSeparator label="Verified MEL Indicators" />
-      {indicators && indicators.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {(indicators || []).map((ind: any) => {
-            const tr =
-              (ind.impact_indicator_translations || []).find((t: any) => t.language === lang) ||
-              (ind.impact_indicator_translations || [])[0];
-            const rec = (ind.impact_records || [])[0];
-            const label =
-              (lang === 'sw' ? ind.name_sw : ind.name_en) ||
-              ind.name_en ||
-              ind.name_sw ||
-              tr?.label ||
-              ind.indicator_key ||
-              ind.code ||
-              'Impact Indicator';
-            const numVal = Number(
-              rec?.numeric_value ??
-              ind.current_value ??
-              ind.target_value ??
-              ind.value ??
-              0
-            );
-            const suffix = ind.value_suffix || (ind.measurement_unit_en === '%' ? '%' : '+');
-            const desc =
-              tr?.description ||
-              (lang === 'sw' ? ind.description_sw : ind.description_en) ||
-              ind.description_en ||
-              '';
-            return (
-              <div
-                key={ind.id}
-                className="bg-white border-0 border-transparent shadow-none p-7 space-y-3 rounded-2xl"
-              >
-                <div className="text-[36px] font-extrabold text-black bg-[#E6A500] inline-block px-3 py-1">
-                  {numVal.toLocaleString()}
-                  {suffix}
+      {(() => {
+        const impactCustomMetrics =
+          siteData.settings?.page_metrics?.impact ||
+          siteData.settings?.impact_page_settings?.metrics;
+        if (Array.isArray(impactCustomMetrics) && impactCustomMetrics.length > 0) {
+          return (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {impactCustomMetrics.map((met: any, idx: number) => (
+                <div
+                  key={idx}
+                  className="bg-white border-0 border-transparent shadow-none p-7 space-y-3 rounded-2xl"
+                >
+                  <div className="text-[36px] font-extrabold text-black bg-[#E6A500] inline-block px-3 py-1">
+                    {Number(met.number || 0).toLocaleString()}
+                    {met.suffix || '+'}
+                  </div>
+                  <h3 className="font-extrabold text-[22px] text-black uppercase tracking-wide">
+                    {met.label || met.type}
+                  </h3>
                 </div>
-                <h3 className="font-extrabold text-[22px] text-black">
-                  {label}
-                </h3>
-                {desc && <p className="text-[18px] text-black leading-relaxed">{desc}</p>}
-              </div>
-            );
-          })}
-        </div>
-      ) : (
-        <EmptyStateCard
-          title={dict.emptyStates.impactTitle}
-          description={dict.emptyStates.impactDesc}
-          icon={BarChart3}
-        />
-      )}
+              ))}
+            </div>
+          );
+        }
+        if (indicators && indicators.length > 0) {
+          return (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {(indicators || []).map((ind: any) => {
+                const tr =
+                  (ind.impact_indicator_translations || []).find((t: any) => t.language === lang) ||
+                  (ind.impact_indicator_translations || [])[0];
+                const rec = (ind.impact_records || [])[0];
+                const label =
+                  (lang === 'sw' ? ind.name_sw : ind.name_en) ||
+                  ind.name_en ||
+                  ind.name_sw ||
+                  tr?.label ||
+                  ind.indicator_key ||
+                  ind.code ||
+                  'Impact Indicator';
+                const numVal = Number(
+                  rec?.numeric_value ??
+                  ind.current_value ??
+                  ind.target_value ??
+                  ind.value ??
+                  0
+                );
+                const suffix = ind.value_suffix || (ind.measurement_unit_en === '%' ? '%' : '+');
+                const desc =
+                  tr?.description ||
+                  (lang === 'sw' ? ind.description_sw : ind.description_en) ||
+                  ind.description_en ||
+                  '';
+                return (
+                  <div
+                    key={ind.id}
+                    className="bg-white border-0 border-transparent shadow-none p-7 space-y-3 rounded-2xl"
+                  >
+                    <div className="text-[36px] font-extrabold text-black bg-[#E6A500] inline-block px-3 py-1">
+                      {numVal.toLocaleString()}
+                      {suffix}
+                    </div>
+                    <h3 className="font-extrabold text-[22px] text-black">
+                      {label}
+                    </h3>
+                    {desc && <p className="text-[18px] text-black leading-relaxed">{desc}</p>}
+                  </div>
+                );
+              })}
+            </div>
+          );
+        }
+        return (
+          <EmptyStateCard
+            title={dict.emptyStates.impactTitle}
+            description={dict.emptyStates.impactDesc}
+            icon={BarChart3}
+          />
+        );
+      })()}
       </div>
     </div>
   );

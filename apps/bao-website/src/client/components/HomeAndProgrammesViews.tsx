@@ -667,53 +667,81 @@ export function HomeView({
             </button>
           </div>
 
-          {indicators.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {(indicators || []).slice(0, 6).map((ind: any) => {
-                const tr =
-                  (ind.impact_indicator_translations || []).find(
-                    (t: any) => t.language === lang
-                  ) || (ind.impact_indicator_translations || [])[0];
-                const rec = (ind.impact_records || [])[0];
-                const label =
-                  (lang === 'sw' ? ind.name_sw : ind.name_en) ||
-                  ind.name_en ||
-                  ind.name_sw ||
-                  tr?.label ||
-                  ind.indicator_key ||
-                  ind.code ||
-                  'Impact Indicator';
-                const numVal = Number(
-                  rec?.numeric_value ??
-                  ind.current_value ??
-                  ind.target_value ??
-                  ind.value ??
-                  0
-                );
-                const suffix = ind.value_suffix || (ind.measurement_unit_en === '%' ? '%' : '+');
-                return (
-                  <div
-                    key={ind.id}
-                    className="p-6 rounded-2xl bg-white border-0 border-transparent shadow-none space-y-2"
-                  >
-                    <div className="text-3xl sm:text-4xl font-extrabold text-black bg-[#E6A500] inline-block px-3 py-1">
-                      {numVal.toLocaleString()}
-                      {suffix}
+          {(() => {
+            const homeCustomMetrics =
+              siteData.settings?.page_metrics?.home ||
+              siteData.settings?.hero_banners?.metrics;
+            if (Array.isArray(homeCustomMetrics) && homeCustomMetrics.length > 0) {
+              return (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {homeCustomMetrics.map((met: any, idx: number) => (
+                    <div
+                      key={idx}
+                      className="p-6 rounded-2xl bg-white border-0 border-transparent shadow-none space-y-2"
+                    >
+                      <div className="text-3xl sm:text-4xl font-extrabold text-black bg-[#E6A500] inline-block px-3 py-1">
+                        {Number(met.number || 0).toLocaleString()}
+                        {met.suffix || '+'}
+                      </div>
+                      <div className="font-extrabold text-lg text-black uppercase tracking-wide">
+                        {met.label || met.type}
+                      </div>
                     </div>
-                    <div className="font-extrabold text-lg text-black">
-                      {label}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <EmptyStateCard
-              title={dict.emptyStates.impactTitle}
-              description={dict.emptyStates.impactDesc}
-              icon={BarChart3}
-            />
-          )}
+                  ))}
+                </div>
+              );
+            }
+            if (indicators.length > 0) {
+              return (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {(indicators || []).slice(0, 6).map((ind: any) => {
+                    const tr =
+                      (ind.impact_indicator_translations || []).find(
+                        (t: any) => t.language === lang
+                      ) || (ind.impact_indicator_translations || [])[0];
+                    const rec = (ind.impact_records || [])[0];
+                    const label =
+                      (lang === 'sw' ? ind.name_sw : ind.name_en) ||
+                      ind.name_en ||
+                      ind.name_sw ||
+                      tr?.label ||
+                      ind.indicator_key ||
+                      ind.code ||
+                      'Impact Indicator';
+                    const numVal = Number(
+                      rec?.numeric_value ??
+                      ind.current_value ??
+                      ind.target_value ??
+                      ind.value ??
+                      0
+                    );
+                    const suffix = ind.value_suffix || (ind.measurement_unit_en === '%' ? '%' : '+');
+                    return (
+                      <div
+                        key={ind.id}
+                        className="p-6 rounded-2xl bg-white border-0 border-transparent shadow-none space-y-2"
+                      >
+                        <div className="text-3xl sm:text-4xl font-extrabold text-black bg-[#E6A500] inline-block px-3 py-1">
+                          {numVal.toLocaleString()}
+                          {suffix}
+                        </div>
+                        <div className="font-extrabold text-lg text-black">
+                          {label}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            }
+            return (
+              <EmptyStateCard
+                title={dict.emptyStates.impactTitle}
+                description={dict.emptyStates.impactDesc}
+                icon={BarChart3}
+              />
+            );
+          })()}
         </div>
       </section>
 
@@ -1462,6 +1490,7 @@ export function ProgrammesView({
 
   return (
     <StandardPageTemplate
+      pageKey="programmes"
       pageTitle={pageTitle}
       pageBadge={pageBadge}
       heroImage={heroImage}

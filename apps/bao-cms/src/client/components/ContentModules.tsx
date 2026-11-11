@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import {
   Plus,
   Trash2,
+  BarChart3,
   Save,
   ShieldAlert,
   CheckCircle2,
@@ -613,10 +614,17 @@ export function ProgrammesModule({
   );
 }
 
+export interface ProjectMetricItem {
+  type: string;
+  number: number;
+  suffix?: string;
+}
+
 export function ProjectsModule({
   projects,
   programmes,
   media,
+  siteSettings,
   canPublish,
   onRefresh,
   notify,
@@ -625,6 +633,7 @@ export function ProjectsModule({
   projects: any[];
   programmes: any[];
   media: any[];
+  siteSettings?: any[];
   canPublish: boolean;
   onRefresh: () => Promise<void>;
   notify: (msg: string, isErr?: boolean) => void;
@@ -643,6 +652,19 @@ export function ProjectsModule({
   const [location, setLocation] = useState('Dar es Salaam, Tanzania');
   const [implementingPartners, setImplementingPartners] = useState('');
   const [supportingDonors, setSupportingDonors] = useState('');
+  
+  // Individual project impact metrics state
+  const [projectMetrics, setProjectMetrics] = useState<ProjectMetricItem[]>([
+    { type: 'youth reached', number: 2500, suffix: '+' },
+    { type: 'locations', number: 6, suffix: ' Wards' },
+    { type: 'emergency respondent', number: 120, suffix: '+' },
+    { type: 'beneficiaries', number: 6800, suffix: '+' },
+    { type: 'hospitals', number: 3, suffix: ' Referral Units' },
+    { type: 'partners', number: 8, suffix: ' Orgs' },
+  ]);
+  const [newMetricType, setNewMetricType] = useState('youth reached');
+  const [newMetricNumber, setNewMetricNumber] = useState('');
+  const [newMetricSuffix, setNewMetricSuffix] = useState('+');
   const [translations, setTranslations] = useState({
     en: {
       title: '',
@@ -678,6 +700,28 @@ export function ProjectsModule({
     setSupportingDonors((proj.supporting_donors || proj.donors || []).join(', '));
     const enT = (proj.project_translations || []).find((t: any) => t.language === 'en') || {};
     const swT = (proj.project_translations || []).find((t: any) => t.language === 'sw') || {};
+
+    // Load individual project impact metrics
+    const projSettings = siteSettings?.find(s => (s.key || s.setting_key) === 'projects_page_settings');
+    const projSettingsVal = projSettings?.value ?? projSettings?.setting_value ?? {};
+    const projectSlugKey = (enT.slug || '').toLowerCase();
+    const existingMetrics =
+      projSettingsVal?.project_metrics?.[projectSlugKey] ||
+      projSettingsVal?.project_metrics?.[proj.id] ||
+      projSettingsVal?.project_metrics?.[proj.project_code?.toLowerCase()];
+
+    if (Array.isArray(existingMetrics) && existingMetrics.length > 0) {
+      setProjectMetrics(existingMetrics);
+    } else {
+      setProjectMetrics([
+        { type: 'youth reached', number: 2500, suffix: '+' },
+        { type: 'locations', number: 6, suffix: ' Wards' },
+        { type: 'emergency respondent', number: 120, suffix: '+' },
+        { type: 'beneficiaries', number: 6800, suffix: '+' },
+        { type: 'hospitals', number: 3, suffix: ' Referral Units' },
+        { type: 'partners', number: 8, suffix: ' Orgs' },
+      ]);
+    }
     setTranslations({
       en: {
         title: enT.title || '',
@@ -712,6 +756,14 @@ export function ProjectsModule({
     setLocation('Dar es Salaam, Tanzania');
     setImplementingPartners('');
     setSupportingDonors('');
+    setProjectMetrics([
+      { type: 'youth reached', number: 2500, suffix: '+' },
+      { type: 'locations', number: 6, suffix: ' Wards' },
+      { type: 'emergency respondent', number: 120, suffix: '+' },
+      { type: 'beneficiaries', number: 6800, suffix: '+' },
+      { type: 'hospitals', number: 3, suffix: ' Referral Units' },
+      { type: 'partners', number: 8, suffix: ' Orgs' },
+    ]);
     setTranslations({
       en: {
         title: '',
@@ -881,6 +933,32 @@ export function ProjectsModule({
           { onConflict: 'project_id,language' }
         );
         if (tErr) throw tErr;
+      }
+
+      // Persist individual project impact metrics in projects_page_settings
+      const targetSlug = (translations.en.slug || '').toLowerCase();
+      if (targetSlug) {
+        const { data: curSetting } = await supabase
+          .from('site_settings')
+          .select('*')
+          .eq('key', 'projects_page_settings')
+          .maybeSingle();
+
+        const curVal = curSetting?.value || {};
+        const curProjMetrics = { ...(curVal.project_metrics || {}) };
+        curProjMetrics[targetSlug] = projectMetrics;
+        if (translations.sw?.slug) {
+          curProjMetrics[translations.sw.slug.toLowerCase()] = projectMetrics;
+        }
+
+        await supabase.from('site_settings').upsert({
+          key: 'projects_page_settings',
+          value: {
+            ...curVal,
+            project_metrics: curProjMetrics,
+          },
+          updated_at: new Date().toISOString(),
+        });
       }
 
       notify('Project saved successfully.');
@@ -1267,6 +1345,156 @@ export function ProjectsModule({
             placeholder="e.g. Municipal Social Welfare, Foundation for Civil Society, UNICEF"
             className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-900 text-sm focus:outline-none focus:border-slate-400"
           />
+        </div>
+
+        {/* Project Individual Impact Metrics Section */}
+        <div className="p-4 bg-amber-50/50 rounded-xl border border-amber-200/80 space-y-3">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div>
+              <h4 className="font-bold text-sm text-slate-900 flex items-center gap-1.5">
+                <BarChart3 className="w-4 h-4 text-[#b88000]" />
+                Project Individual Impact Metrics & Outcomes
+              </h4>
+              <p className="text-xs text-slate-500">
+                Configure accurate numbers and achievement indicators specifically for this project's dedicated page.
+              </p>
+            </div>
+            <span className="text-[11px] font-bold text-amber-800 bg-amber-100 px-2.5 py-0.5 rounded-full">
+              {projectMetrics.length} Metric{projectMetrics.length === 1 ? '' : 's'} Configured
+            </span>
+          </div>
+
+          {/* Active Metrics List */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-1">
+            {projectMetrics.map((met, idx) => (
+              <div
+                key={idx}
+                className="bg-white p-3 rounded-lg border border-slate-200 space-y-2 shadow-xs"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-800 bg-amber-50 px-2 py-0.5 rounded">
+                    {met.type}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setProjectMetrics((prev) => prev.filter((_, i) => i !== idx))}
+                    className="text-slate-400 hover:text-red-600 p-0.5 cursor-pointer"
+                    title="Remove Metric"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">
+                      Number
+                    </label>
+                    <input
+                      type="number"
+                      value={met.number}
+                      onChange={(e) => {
+                        const val = Number(e.target.value) || 0;
+                        setProjectMetrics((prev) =>
+                          prev.map((item, i) => (i === idx ? { ...item, number: val } : item))
+                        );
+                      }}
+                      className="w-full px-2.5 py-1.5 text-xs font-bold border border-slate-200 rounded focus:border-slate-400 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">
+                      Suffix / Unit
+                    </label>
+                    <input
+                      type="text"
+                      value={met.suffix || ''}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setProjectMetrics((prev) =>
+                          prev.map((item, i) => (i === idx ? { ...item, suffix: val } : item))
+                        );
+                      }}
+                      placeholder="e.g. +, Wards"
+                      className="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded focus:border-slate-400 focus:outline-none"
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Add New Metric Row */}
+          <div className="pt-2 border-t border-amber-200/60 flex flex-wrap items-end gap-2.5">
+            <div className="flex-1 min-w-[140px]">
+              <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
+                Metric Category
+              </label>
+              <select
+                value={newMetricType}
+                onChange={(e) => setNewMetricType(e.target.value)}
+                className="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none focus:border-slate-400"
+              >
+                <option value="youth reached">Youth Reached</option>
+                <option value="locations">Locations / Wards</option>
+                <option value="emergency respondent">Emergency Respondent</option>
+                <option value="beneficiaries">Beneficiaries</option>
+                <option value="hospitals">Hospitals / Referral Units</option>
+                <option value="partners">Partner Organizations</option>
+              </select>
+            </div>
+
+            <div className="w-28">
+              <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
+                Value
+              </label>
+              <input
+                type="number"
+                value={newMetricNumber}
+                onChange={(e) => setNewMetricNumber(e.target.value)}
+                placeholder="e.g. 1500"
+                className="w-full px-2.5 py-1.5 text-xs font-bold border border-slate-200 rounded-lg bg-white focus:outline-none focus:border-slate-400"
+              />
+            </div>
+
+            <div className="w-28">
+              <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
+                Suffix / Unit
+              </label>
+              <input
+                type="text"
+                value={newMetricSuffix}
+                onChange={(e) => setNewMetricSuffix(e.target.value)}
+                placeholder="e.g. +"
+                className="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none focus:border-slate-400"
+              />
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                const num = Number(newMetricNumber);
+                if (!num) {
+                  notify('Please enter a valid numeric value for the metric.', true);
+                  return;
+                }
+                setProjectMetrics((prev) => [
+                  ...prev,
+                  {
+                    type: newMetricType,
+                    number: num,
+                    suffix: newMetricSuffix.trim() || '+',
+                  },
+                ]);
+                setNewMetricNumber('');
+                setNewMetricSuffix('+');
+              }}
+              className="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-600 text-black text-xs font-bold rounded-lg cursor-pointer transition flex items-center gap-1.5"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Add Metric
+            </button>
+          </div>
         </div>
 
         <div className="pt-4 border-t border-slate-100 flex items-center justify-between flex-wrap gap-3">

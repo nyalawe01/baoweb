@@ -59,6 +59,7 @@ import { supabase } from '../supabase.js';
 import { type SweetAlertOptions } from './SweetAlertModal.js';
 import { stripHtmlForEditing, plainTextToFormattedHtml } from './ContentModules.js';
 import { HeroBannerImageUploader } from './HeroBannerImageUploader.js';
+import { broadcastLivePublish } from '../lib/liveSync.js';
 
 export function MediaLibraryModule({
   media,
@@ -979,9 +980,18 @@ export function PartnersAndTeamModule({
   );
 }
 
+export interface ImpactMetricItem {
+  type: string;
+  number: number;
+  suffix?: string;
+  label?: string;
+}
+
 export function ResourcesAndImpactModule({
   publications,
   indicators,
+  projects,
+  siteSettings,
   media,
   canPublish,
   onRefresh,
@@ -990,13 +1000,15 @@ export function ResourcesAndImpactModule({
 }: {
   publications: any[];
   indicators: any[];
+  projects?: any[];
+  siteSettings?: any[];
   media: any[];
   canPublish: boolean;
   onRefresh: () => Promise<void>;
   notify: (msg: string, isErr?: boolean) => void;
   showAlert?: (opts: SweetAlertOptions) => void;
 }) {
-  const [tab, setTab] = useState<'impact' | 'publications'>('impact');
+  const [tab, setTab] = useState<'page_metrics' | 'impact' | 'publications'>('page_metrics');
   const [saving, setSaving] = useState(false);
   const [editingIndicatorId, setEditingIndicatorId] = useState<string | null>(null);
   const [indKey, setIndKey] = useState('');
@@ -1004,6 +1016,222 @@ export function ResourcesAndImpactModule({
   const [labelSw, setLabelSw] = useState('');
   const [unit, setUnit] = useState('children');
   const [numericValue, setNumericValue] = useState('');
+
+  // Page & Project Individual Metrics State
+  const TARGET_PAGES = [
+    { key: 'home', label: '🏠 Homepage (Operational Scale & Verified Reach)', settingKey: 'page_metrics' },
+    { key: 'programmes', label: '🛡️ Strategic Programmes Page (/programmes)', settingKey: 'programmes_page_settings' },
+    { key: 'projects', label: '📁 Projects Overview Page (/projects)', settingKey: 'projects_page_settings' },
+    { key: 'impact', label: '📊 Main MEL / Impact Page (/impact)', settingKey: 'impact_page_settings' },
+    { key: 'about', label: '📜 Our History & Vision (/about)', settingKey: 'our_history' },
+    { key: 'governance', label: '👥 Leadership & Governance (/governance)', settingKey: 'leadership_and_governance' },
+    { key: 'get-involved', label: '🤝 Partner & Volunteer (/get-involved)', settingKey: 'get_involved_settings' },
+    { key: 'street-children', label: '💛 About Street Children (/about-street-children)', settingKey: 'page_metrics' },
+  ];
+
+  const allProjectTargets = (projects || []).map((p: any) => {
+    const enT = (p.project_translations || []).find((t: any) => t.language === 'en') || {};
+    const slug = (enT.slug || p.project_code || p.id).toLowerCase();
+    const title = enT.title || p.name_en || p.project_code || 'Project';
+    return {
+      key: `project-${slug}`,
+      slug,
+      label: `📌 Project: ${title} (/projects/${slug})`,
+      settingKey: 'projects_page_settings',
+    };
+  });
+
+  const ALL_TARGETS = [...TARGET_PAGES, ...allProjectTargets];
+
+  const [selectedTarget, setSelectedTarget] = useState<string>('home');
+  const [targetMetrics, setTargetMetrics] = useState<ImpactMetricItem[]>([]);
+  const [isSavingMetrics, setIsSavingMetrics] = useState(false);
+  const [newMetricType, setNewMetricType] = useState('youth reached');
+  const [newMetricNumber, setNewMetricNumber] = useState('');
+  const [newMetricSuffix, setNewMetricSuffix] = useState('+');
+
+  const loadMetricsForTarget = (targetKey: string) => {
+    const pmSetting = siteSettings?.find((s: any) => (s.key || s.setting_key) === 'page_metrics');
+    const pmVal = pmSetting?.value ?? pmSetting?.setting_value ?? {};
+    if (Array.isArray(pmVal?.[targetKey]) && pmVal[targetKey].length > 0) {
+      setTargetMetrics(pmVal[targetKey]);
+      return;
+    }
+
+    if (targetKey.startsWith('project-')) {
+      const slug = targetKey.replace(/^project-/, '').toLowerCase();
+      const projSetting = siteSettings?.find((s: any) => (s.key || s.setting_key) === 'projects_page_settings');
+      const projVal = projSetting?.value ?? projSetting?.setting_value ?? {};
+      const pMetrics = projVal?.project_metrics?.[slug];
+      if (Array.isArray(pMetrics) && pMetrics.length > 0) {
+        setTargetMetrics(pMetrics);
+        return;
+      }
+    }
+
+    const settingMap: Record<string, string> = {
+      programmes: 'programmes_page_settings',
+      projects: 'projects_page_settings',
+      impact: 'impact_page_settings',
+      about: 'our_history',
+      governance: 'leadership_and_governance',
+      'get-involved': 'get_involved_settings',
+    };
+    const specificKey = settingMap[targetKey];
+    if (specificKey) {
+      const sObj = siteSettings?.find((s: any) => (s.key || s.setting_key) === specificKey);
+      const sVal = sObj?.value ?? sObj?.setting_value ?? {};
+      if (Array.isArray(sVal?.metrics) && sVal.metrics.length > 0) {
+        setTargetMetrics(sVal.metrics);
+        return;
+      }
+    }
+
+    if (targetKey === 'home') {
+      setTargetMetrics([
+        { type: 'youth reached', number: 12500, suffix: '+' },
+        { type: 'locations', number: 14, suffix: ' Wards' },
+        { type: 'emergency respondent', number: 380, suffix: '+' },
+        { type: 'beneficiaries', number: 28400, suffix: '+' },
+        { type: 'hospitals', number: 8, suffix: ' Referral Units' },
+        { type: 'partners', number: 26, suffix: ' Orgs' },
+      ]);
+    } else if (targetKey === 'programmes') {
+      setTargetMetrics([
+        { type: 'youth reached', number: 7800, suffix: '+' },
+        { type: 'locations', number: 8, suffix: ' Centres' },
+        { type: 'emergency respondent', number: 150, suffix: '+' },
+        { type: 'beneficiaries', number: 18200, suffix: '+' },
+        { type: 'hospitals', number: 5, suffix: ' Units' },
+        { type: 'partners', number: 16, suffix: ' Orgs' },
+      ]);
+    } else if (targetKey === 'projects') {
+      setTargetMetrics([
+        { type: 'youth reached', number: 9400, suffix: '+' },
+        { type: 'locations', number: 12, suffix: ' Wards' },
+        { type: 'emergency respondent', number: 210, suffix: '+' },
+        { type: 'beneficiaries', number: 21500, suffix: '+' },
+        { type: 'hospitals', number: 6, suffix: ' Units' },
+        { type: 'partners', number: 22, suffix: ' Orgs' },
+      ]);
+    } else if (targetKey === 'impact') {
+      setTargetMetrics([
+        { type: 'youth reached', number: 14200, suffix: '+' },
+        { type: 'locations', number: 16, suffix: ' Wards' },
+        { type: 'emergency respondent', number: 410, suffix: '+' },
+        { type: 'beneficiaries', number: 32000, suffix: '+' },
+        { type: 'hospitals', number: 9, suffix: ' Units' },
+        { type: 'partners', number: 30, suffix: ' Orgs' },
+      ]);
+    } else {
+      setTargetMetrics([
+        { type: 'youth reached', number: 3200, suffix: '+' },
+        { type: 'locations', number: 6, suffix: ' Wards' },
+        { type: 'emergency respondent', number: 95, suffix: '+' },
+        { type: 'beneficiaries', number: 6400, suffix: '+' },
+        { type: 'hospitals', number: 3, suffix: ' Referral Units' },
+        { type: 'partners', number: 12, suffix: ' Orgs' },
+      ]);
+    }
+  };
+
+  useEffect(() => {
+    loadMetricsForTarget(selectedTarget);
+  }, [selectedTarget, siteSettings]);
+
+  const saveTargetMetrics = async () => {
+    const curTargetObj = ALL_TARGETS.find(t => t.key === selectedTarget);
+    const targetLabel = curTargetObj?.label || selectedTarget;
+
+    setIsSavingMetrics(true);
+    showAlert?.({
+      type: 'loading',
+      title: 'Saving Metrics...',
+      message: `Persisting individual metrics for ${targetLabel} to database...`,
+    });
+
+    try {
+      const pmSetting = siteSettings?.find((s: any) => (s.key || s.setting_key) === 'page_metrics');
+      const curPm = pmSetting?.value ?? pmSetting?.setting_value ?? {};
+      const nextPm = { ...curPm, [selectedTarget]: targetMetrics };
+
+      await supabase.from('site_settings').upsert({
+        key: 'page_metrics',
+        value: nextPm,
+        updated_at: new Date().toISOString(),
+      });
+
+      if (selectedTarget.startsWith('project-')) {
+        const slug = selectedTarget.replace(/^project-/, '').toLowerCase();
+        const projSetting = siteSettings?.find((s: any) => (s.key || s.setting_key) === 'projects_page_settings');
+        const projVal = projSetting?.value ?? projSetting?.setting_value ?? {};
+        const nextProjMetrics = { ...(projVal?.project_metrics || {}), [slug]: targetMetrics };
+        await supabase.from('site_settings').upsert({
+          key: 'projects_page_settings',
+          value: {
+            ...projVal,
+            project_metrics: nextProjMetrics,
+          },
+          updated_at: new Date().toISOString(),
+        });
+      }
+
+      const settingMap: Record<string, string> = {
+        programmes: 'programmes_page_settings',
+        projects: 'projects_page_settings',
+        impact: 'impact_page_settings',
+        about: 'our_history',
+        governance: 'leadership_and_governance',
+        'get-involved': 'get_involved_settings',
+      };
+      const specificKey = settingMap[selectedTarget];
+      if (specificKey) {
+        const sObj = siteSettings?.find((s: any) => (s.key || s.setting_key) === specificKey);
+        const sVal = sObj?.value ?? sObj?.setting_value ?? {};
+        await supabase.from('site_settings').upsert({
+          key: specificKey,
+          value: {
+            ...sVal,
+            metrics: targetMetrics,
+          },
+          updated_at: new Date().toISOString(),
+        });
+      }
+
+      notify(`Metrics for ${targetLabel} saved and published successfully!`);
+      broadcastLivePublish({ module: 'impact' });
+      await onRefresh();
+
+      let websiteUrl = 'http://localhost:3000';
+      if (selectedTarget === 'programmes') websiteUrl = 'http://localhost:3000/programmes';
+      else if (selectedTarget === 'projects') websiteUrl = 'http://localhost:3000/projects';
+      else if (selectedTarget === 'impact') websiteUrl = 'http://localhost:3000/impact';
+      else if (selectedTarget === 'about') websiteUrl = 'http://localhost:3000/about';
+      else if (selectedTarget === 'governance') websiteUrl = 'http://localhost:3000/governance';
+      else if (selectedTarget === 'get-involved') websiteUrl = 'http://localhost:3000/get-involved';
+      else if (selectedTarget.startsWith('project-')) {
+        const slug = selectedTarget.replace(/^project-/, '');
+        websiteUrl = `http://localhost:3000/projects/${slug}`;
+      }
+
+      showAlert?.({
+        type: 'success',
+        title: 'Metrics Saved & Published Live!',
+        message: `The individual metrics for ${targetLabel} have been updated. The website now displays these accurate numbers!`,
+        websiteUrl,
+        websiteLabel: `View ${targetLabel} Live ↗`,
+      });
+    } catch (err: any) {
+      notify(err.message || 'Failed to save metrics', true);
+      showAlert?.({
+        type: 'error',
+        title: 'Failed to Save Metrics',
+        message: err.message || 'An error occurred while saving metrics to database.',
+      });
+    } finally {
+      setIsSavingMetrics(false);
+    }
+  };
 
   const [pubTitle, setPubTitle] = useState('');
   const [pubSlug, setPubSlug] = useState('');
@@ -1046,8 +1274,8 @@ export function ResourcesAndImpactModule({
             code: cleanKey,
             name_en: labelEn.trim(),
             name_sw: (labelSw || labelEn).trim(),
-            description_en: sourceNote.trim() || 'BAO MEL Records',
-            description_sw: sourceNote.trim() || 'BAO MEL Records',
+            description_en: 'BAO MEL Records',
+            description_sw: 'Kumbukumbu za MEL za BAO',
             measurement_unit_en: unit.trim() || 'children',
             measurement_unit_sw: unit.trim() || 'watoto',
             value_suffix: unit.trim() === '%' ? '%' : '+',
@@ -1064,8 +1292,8 @@ export function ResourcesAndImpactModule({
               code: cleanKey,
               name_en: labelEn.trim(),
               name_sw: (labelSw || labelEn).trim(),
-              description_en: sourceNote.trim() || 'BAO MEL Records',
-              description_sw: sourceNote.trim() || 'BAO MEL Records',
+              description_en: 'BAO MEL Records',
+              description_sw: 'Kumbukumbu za MEL za BAO',
               measurement_unit_en: unit.trim() || 'children',
               measurement_unit_sw: unit.trim() || 'watoto',
               value_suffix: unit.trim() === '%' ? '%' : '+',
@@ -1201,22 +1429,288 @@ export function ResourcesAndImpactModule({
 
   return (
     <div className="space-y-6">
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
+        <button
+          onClick={() => setTab('page_metrics')}
+          className={`px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 cursor-pointer transition ${
+            tab === 'page_metrics' ? 'bg-[#E6A500] text-black shadow-sm' : 'bg-white border border-[#E5E7E5] text-black hover:border-black'
+          }`}
+        >
+          <Layers className="w-4 h-4" /> Page & Project Metrics (Individual Accuracy)
+        </button>
         <button
           onClick={() => setTab('impact')}
-          className={`px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 ${tab === 'impact' ? 'bg-[#E6A500] text-black' : 'bg-white border border-[#E5E7E5] text-black'
-            }`}
+          className={`px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 cursor-pointer transition ${
+            tab === 'impact' ? 'bg-[#E6A500] text-black shadow-sm' : 'bg-white border border-[#E5E7E5] text-black hover:border-black'
+          }`}
         >
-          <BarChart3 className="w-4 h-4" /> MEL Impact & Statistics ({indicators.length})
+          <BarChart3 className="w-4 h-4" /> Core MEL Indicators ({indicators.length})
         </button>
         <button
           onClick={() => setTab('publications')}
-          className={`px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 ${tab === 'publications' ? 'bg-[#E6A500] text-black' : 'bg-white border border-[#E5E7E5] text-black'
-            }`}
+          className={`px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 cursor-pointer transition ${
+            tab === 'publications' ? 'bg-[#E6A500] text-black shadow-sm' : 'bg-white border border-[#E5E7E5] text-black hover:border-black'
+          }`}
         >
           <FileText className="w-4 h-4" /> Resources & Publications ({publications.length})
         </button>
       </div>
+
+      {tab === 'page_metrics' && (
+        <div className="space-y-6">
+          {/* Top Target Selector Card */}
+          <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-4 shadow-none">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-gray-100 pb-4">
+              <div>
+                <span className="text-[11px] font-black uppercase tracking-wider text-amber-800 bg-amber-100 px-2.5 py-0.5 rounded-full inline-block mb-1">
+                  Individual Page & Project Accuracy
+                </span>
+                <h3 className="text-base font-extrabold text-gray-900">
+                  Select Page or Project to Configure Impact Numbers
+                </h3>
+                <p className="text-xs text-gray-500">
+                  Choose any page or individual project below. Changes made here publish specifically to that destination.
+                </p>
+              </div>
+
+              <div className="w-full md:w-80">
+                <label className="block text-xs font-bold text-gray-700 uppercase mb-1">
+                  Target Destination:
+                </label>
+                <select
+                  value={selectedTarget}
+                  onChange={(e) => setSelectedTarget(e.target.value)}
+                  className="w-full px-3 py-2 text-xs font-bold border-2 border-amber-400 bg-amber-50/30 rounded-lg focus:outline-none focus:border-black cursor-pointer"
+                >
+                  <optgroup label="Standard Website Pages">
+                    {TARGET_PAGES.map((t) => (
+                      <option key={t.key} value={t.key}>
+                        {t.label}
+                      </option>
+                    ))}
+                  </optgroup>
+                  {allProjectTargets.length > 0 && (
+                    <optgroup label="Individual Projects">
+                      {allProjectTargets.map((p) => (
+                        <option key={p.key} value={p.key}>
+                          {p.label}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+                </select>
+              </div>
+            </div>
+
+            {/* Metrics List for this Target */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h4 className="font-bold text-sm text-gray-900 flex items-center gap-2">
+                  <BarChart3 className="w-4 h-4 text-[#b88000]" />
+                  Active Metrics for{' '}
+                  <span className="text-amber-800 underline">
+                    {ALL_TARGETS.find((t) => t.key === selectedTarget)?.label || selectedTarget}
+                  </span>
+                </h4>
+                <span className="text-xs font-semibold text-gray-500">
+                  {targetMetrics.length} Metric{targetMetrics.length === 1 ? '' : 's'} Active
+                </span>
+              </div>
+
+              {targetMetrics.length === 0 ? (
+                <div className="p-8 text-center bg-gray-50 rounded-xl border border-dashed border-gray-300 space-y-2">
+                  <BarChart3 className="w-8 h-8 text-gray-400 mx-auto" />
+                  <p className="text-xs text-gray-600 font-medium">
+                    No individual metrics set for this destination yet. Add metrics below or click Save to store defaults.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {targetMetrics.map((met, idx) => (
+                    <div
+                      key={idx}
+                      className="bg-white p-4 rounded-xl border border-gray-200 hover:border-black transition space-y-3 relative shadow-none"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 bg-amber-100 text-amber-900 rounded">
+                          {met.type}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setTargetMetrics((prev) => prev.filter((_, i) => i !== idx))}
+                          className="text-gray-400 hover:text-red-600 p-1 cursor-pointer transition"
+                          title="Remove Metric"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">
+                            Numeric Value
+                          </label>
+                          <input
+                            type="number"
+                            value={met.number}
+                            onChange={(e) => {
+                              const v = Number(e.target.value) || 0;
+                              setTargetMetrics((prev) =>
+                                prev.map((item, i) => (i === idx ? { ...item, number: v } : item))
+                              );
+                            }}
+                            className="w-full px-2.5 py-1.5 text-xs font-bold border border-gray-300 rounded focus:border-black focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">
+                            Suffix / Unit
+                          </label>
+                          <input
+                            type="text"
+                            value={met.suffix || ''}
+                            onChange={(e) => {
+                              const v = e.target.value;
+                              setTargetMetrics((prev) =>
+                                prev.map((item, i) => (i === idx ? { ...item, suffix: v } : item))
+                              );
+                            }}
+                            placeholder="e.g. +, Wards"
+                            className="w-full px-2.5 py-1.5 text-xs border border-gray-300 rounded focus:border-black focus:outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">
+                          Custom Description / Label (Optional)
+                        </label>
+                        <input
+                          type="text"
+                          value={met.label || ''}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            setTargetMetrics((prev) =>
+                              prev.map((item, i) => (i === idx ? { ...item, label: v } : item))
+                            );
+                          }}
+                          placeholder={met.type}
+                          className="w-full px-2.5 py-1 text-xs border border-gray-200 rounded focus:border-black focus:outline-none text-gray-600"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Add New Metric Form */}
+              <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 space-y-3">
+                <h5 className="font-bold text-xs text-gray-800 uppercase tracking-wider flex items-center gap-1.5">
+                  <Plus className="w-3.5 h-3.5 text-amber-600" />
+                  Add Additional Metric to This Destination
+                </h5>
+
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
+                  <div className="sm:col-span-4">
+                    <label className="block text-[11px] font-bold text-gray-600 uppercase mb-1">
+                      Metric Type / Category
+                    </label>
+                    <select
+                      value={newMetricType}
+                      onChange={(e) => setNewMetricType(e.target.value)}
+                      className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg bg-white focus:outline-none focus:border-black"
+                    >
+                      <option value="youth reached">Youth Reached</option>
+                      <option value="locations">Locations / Wards</option>
+                      <option value="emergency respondent">Emergency Respondent</option>
+                      <option value="beneficiaries">Beneficiaries</option>
+                      <option value="hospitals">Hospitals / Referral Units</option>
+                      <option value="partners">Partner Organizations</option>
+                    </select>
+                  </div>
+
+                  <div className="sm:col-span-3">
+                    <label className="block text-[11px] font-bold text-gray-600 uppercase mb-1">
+                      Value
+                    </label>
+                    <input
+                      type="number"
+                      value={newMetricNumber}
+                      onChange={(e) => setNewMetricNumber(e.target.value)}
+                      placeholder="e.g. 3500"
+                      className="w-full px-3 py-2 text-xs font-bold border border-gray-300 rounded-lg bg-white focus:outline-none focus:border-black"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <label className="block text-[11px] font-bold text-gray-600 uppercase mb-1">
+                      Suffix
+                    </label>
+                    <input
+                      type="text"
+                      value={newMetricSuffix}
+                      onChange={(e) => setNewMetricSuffix(e.target.value)}
+                      placeholder="e.g. +"
+                      className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg bg-white focus:outline-none focus:border-black"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const num = Number(newMetricNumber);
+                        if (!num) {
+                          notify('Please enter a valid numeric value.', true);
+                          return;
+                        }
+                        setTargetMetrics((prev) => [
+                          ...prev,
+                          {
+                            type: newMetricType,
+                            number: num,
+                            suffix: newMetricSuffix.trim() || '+',
+                          },
+                        ]);
+                        setNewMetricNumber('');
+                        setNewMetricSuffix('+');
+                      }}
+                      className="w-full py-2 px-3 bg-amber-500 hover:bg-amber-600 text-black text-xs font-bold rounded-lg cursor-pointer transition flex items-center justify-center gap-1.5 shadow-none"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      Add Metric
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Save Button Bar */}
+              <div className="pt-3 border-t border-gray-200 flex items-center justify-between flex-wrap gap-3">
+                <p className="text-xs text-gray-500">
+                  Saves and publishes these metrics specifically to{' '}
+                  <strong>{ALL_TARGETS.find((t) => t.key === selectedTarget)?.label || selectedTarget}</strong>.
+                </p>
+                <button
+                  type="button"
+                  onClick={saveTargetMetrics}
+                  disabled={isSavingMetrics}
+                  className="px-6 py-2.5 bg-black hover:bg-gray-800 disabled:opacity-50 text-white text-xs font-bold rounded-lg flex items-center gap-2 cursor-pointer shadow-none transition"
+                >
+                  {isSavingMetrics ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" /> Saving & Publishing...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4" /> Save & Publish Live
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {tab === 'impact' ? (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">

@@ -58,6 +58,7 @@ export function StandardPageTemplate({
   leadTitle,
   leadDescription = '',
   charLimit = 360,
+  pageKey,
   metrics,
   siteData,
   navigate,
@@ -70,8 +71,9 @@ export function StandardPageTemplate({
   leadTitle?: string;
   leadDescription?: string;
   charLimit?: number;
+  pageKey?: string;
   metrics?: Array<{
-    type: 'youth reached' | 'locations' | 'emergency respondent' | 'beneficiaries' | 'hospitals' | 'partners';
+    type: 'youth reached' | 'locations' | 'emergency respondent' | 'beneficiaries' | 'hospitals' | 'partners' | string;
     number: number;
     suffix?: string;
   }>;
@@ -103,7 +105,7 @@ export function StandardPageTemplate({
   };
 
   const defaultMetrics: Array<{
-    type: 'youth reached' | 'locations' | 'emergency respondent' | 'beneficiaries' | 'hospitals' | 'partners';
+    type: 'youth reached' | 'locations' | 'emergency respondent' | 'beneficiaries' | 'hospitals' | 'partners' | string;
     number: number;
     suffix?: string;
   }> = [
@@ -115,7 +117,19 @@ export function StandardPageTemplate({
     { type: 'partners', number: 26, suffix: ' Orgs' },
   ];
 
-  const activeMetrics = metrics && metrics.length > 0 ? metrics : defaultMetrics;
+  // Resolve individual metrics for this specific page from site settings
+  const resolvedPageMetrics = pageKey
+    ? (siteData?.settings?.page_metrics?.[pageKey] ||
+       siteData?.settings?.[`${pageKey}_page_settings`]?.metrics ||
+       siteData?.settings?.[`${pageKey}_settings`]?.metrics ||
+       siteData?.settings?.[pageKey]?.metrics)
+    : undefined;
+
+  const activeMetrics = (metrics && metrics.length > 0)
+    ? metrics
+    : (Array.isArray(resolvedPageMetrics) && resolvedPageMetrics.length > 0
+        ? resolvedPageMetrics
+        : defaultMetrics);
   const newsList: any[] = ((siteData && siteData.news) || []).slice(0, 3);
 
   return (
