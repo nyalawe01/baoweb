@@ -1,0 +1,52 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "services": {
+    "bao-website": {
+      "root": "apps/bao-website",
+      "framework": "express",
+      "buildCommand": "npm --workspace=@bao/shared run build && npm run build",
+      "bindings": [
+        {
+          "type": "service",
+          "service": "bao-cms",
+          "format": "url",
+          "env": "CMS_URL"
+        }
+      ]
+    },
+    "bao-cms": {
+      "root": "apps/bao-cms",
+      "framework": "express",
+      "buildCommand": "npm --workspace=@bao/shared run build && npm run build",
+      "bindings": [
+        {
+          "type": "service",
+          "service": "bao-website",
+          "format": "url",
+          "env": "WEBSITE_URL"
+        }
+      ]
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/v1/(.*)",
+      "destination": {
+        "service": "bao-cms"
+      }
+    },
+    {
+      "source": "/cms/(.*)",
+      "destination": {
+        "service": "bao-cms"
+      }
+    },
+    {
+      "source": "/(.*)",
+      "destination": {
+        "service": "bao-website"
+      }
+    }
+  ]
+}
+

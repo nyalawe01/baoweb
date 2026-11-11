@@ -152,6 +152,15 @@ export function App() {
   };
 
   useEffect(() => {
+    fetch('/api/v1/config')
+      .then((r) => r.json())
+      .then((cfg) => {
+        if (cfg?.websiteUrl) {
+          (window as any).__BAO_WEBSITE_URL__ = cfg.websiteUrl;
+        }
+      })
+      .catch(() => {});
+
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
     });

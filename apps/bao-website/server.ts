@@ -83,6 +83,24 @@ app.get('/media/public/*', async (req: Request, res: Response) => {
       }
     }
     if (!resolved) {
+      // If media file is not present on local filesystem (e.g. Vercel serverless), fetch via bound CMS service
+      if (process.env.CMS_URL) {
+        try {
+          const remoteUrl = new URL(`/media/public/${relativePath}`, process.env.CMS_URL);
+          const remoteRes = await fetch(remoteUrl);
+          if (remoteRes.ok) {
+            const contentType = remoteRes.headers.get('content-type') || 'application/octet-stream';
+            res.setHeader('Content-Type', contentType);
+            res.setHeader('Cache-Control', 'public, max-age=86400');
+            const arrayBuffer = await remoteRes.arrayBuffer();
+            res.send(Buffer.from(arrayBuffer));
+            return;
+          }
+        } catch (fetchErr) {
+          console.warn('[bao-website] Failed to fetch media from bound CMS service:', fetchErr);
+        }
+      }
+
       res.status(404).json({ error: 'Media file not found' });
       return;
     }

@@ -230,6 +230,12 @@ export function createCmsApp() {
     res.json({ staff: req.staff });
   });
 
+  app.get('/api/v1/config', (_req: Request, res: Response) => {
+    res.json({
+      websiteUrl: process.env.WEBSITE_URL || 'http://localhost:3000',
+    });
+  });
+
   app.get(
     '/api/v1/dashboard',
     requireStaffAuth,
@@ -861,9 +867,11 @@ const isDirectRun =
   process.argv[1] &&
   (process.argv[1].endsWith('server.ts') || process.argv[1].endsWith('server.js'));
 
+export const app = createCmsApp();
+export default app;
+
 if (isDirectRun) {
   const port = Number(process.env.CMS_PORT || 3001);
-  const app = createCmsApp();
   app.listen(port, () => {
     console.log(`[BAO-CMS] Administrative Server listening on http://localhost:${port}`);
   });
