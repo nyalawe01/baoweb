@@ -604,6 +604,13 @@ export function Footer({
 }) {
   const dict = UI_TRANSLATIONS[lang];
   const contact = settings?.contact_details || {};
+  const contactPageSettings = settings?.contact_page_settings || {};
+  const phonesList: Array<{ title?: string; number: string }> =
+    Array.isArray(contactPageSettings.phones_list) && contactPageSettings.phones_list.length > 0
+      ? contactPageSettings.phones_list
+      : Array.isArray(contact.phones_list) && contact.phones_list.length > 0
+      ? contact.phones_list
+      : (contact.phones || ['+255 651 136502', '+255 651 136504']).map((p: string) => ({ number: p }));
   const social = settings?.social_links || {};
 
   const instagramUrl = social.instagram || 'https://www.instagram.com/babawatotocentre/';
