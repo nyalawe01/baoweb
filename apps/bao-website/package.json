@@ -6,6 +6,7 @@
   "main": "server.ts",
   "scripts": {
     "dev": "tsx watch server.ts",
+    "prebuild": "npm --prefix ../../packages/shared run build",
     "build:client": "vite build",
     "build:server": "tsc -p tsconfig.server.json",
     "build": "npm run build:client && npm run build:server",

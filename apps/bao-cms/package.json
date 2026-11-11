@@ -6,6 +6,7 @@
   "main": "server.ts",
   "scripts": {
     "dev": "tsx watch server.ts",
+    "prebuild": "npm --prefix ../../packages/shared run build",
     "build": "vite build && tsc -p tsconfig.server.json",
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit"

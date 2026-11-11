@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import os from 'node:os';
 import path from 'node:path';
 import { existsSync } from 'node:fs';
 import express, { type Request, type Response, type NextFunction } from 'express';
@@ -30,11 +31,13 @@ const SUPABASE_ANON_KEY =
   process.env.SUPABASE_ANON_KEY ||
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImprcG9wZmNxa3JwbXR4Y2FtcWR4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQxMjY3NTUsImV4cCI6MjEwOTcwMjc1NX0.eNAASSE3NKBUdYcJdZ1bYczzY_v3JxuPAomSB4B0Sjs';
 
-const STORAGE_ROOT_PATH =
-  process.env.STORAGE_ROOT_PATH || path.resolve(process.cwd(), '../../bao-cms-storage');
+const defaultStorage = process.env.VERCEL
+  ? path.join(os.tmpdir(), 'bao-cms-storage')
+  : path.resolve(process.cwd(), '../../bao-cms-storage');
+const STORAGE_ROOT_PATH = process.env.STORAGE_ROOT_PATH || defaultStorage;
 const fallbackRootStorage = existsSync(STORAGE_ROOT_PATH)
   ? STORAGE_ROOT_PATH
-  : path.resolve(process.cwd(), 'bao-cms-storage');
+  : (process.env.VERCEL ? path.join(os.tmpdir(), 'bao-cms-storage') : path.resolve(process.cwd(), 'bao-cms-storage'));
 
 export const storageProvider = new LocalCpanelStorageProvider(fallbackRootStorage);
 

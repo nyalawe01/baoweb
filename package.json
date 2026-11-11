@@ -8,6 +8,7 @@
     "apps/*"
   ],
   "scripts": {
+    "postinstall": "npm --workspace=@bao/shared run build",
     "dev:website": "npm --workspace=@bao/website run dev",
     "dev:cms": "npm --workspace=@bao/cms run dev",
     "build": "npm --workspace=@bao/shared run build && npm --workspace=@bao/website run build && npm --workspace=@bao/cms run build",

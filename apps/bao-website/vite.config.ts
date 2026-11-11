@@ -8,6 +8,8 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src/client'),
+      '@bao/shared/storage': path.resolve(__dirname, '../../packages/shared/src/storage.ts'),
+      '@bao/shared': path.resolve(__dirname, '../../packages/shared/src/index.ts'),
     },
   },
   build: {

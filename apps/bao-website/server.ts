@@ -1,5 +1,6 @@
 import path from 'node:path';
 import fs from 'node:fs';
+import os from 'node:os';
 import { fileURLToPath } from 'node:url';
 import express, { type Request, type Response } from 'express';
 import helmet from 'helmet';
@@ -43,7 +44,7 @@ const STORAGE_ROOT =
     } catch {
       return false;
     }
-  }) || path.resolve(process.cwd(), '../../bao-cms-storage');
+  }) || (process.env.VERCEL ? path.join(os.tmpdir(), 'bao-cms-storage') : path.resolve(process.cwd(), '../../bao-cms-storage'));
 
 const storageProvider = new LocalCpanelStorageProvider(STORAGE_ROOT);
 storageProvider.ensureDirectories().catch((err) => {
