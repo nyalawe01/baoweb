@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { PUBLICATION_STATUSES, type LanguageCode, type PublicationStatus } from '@bao/shared';
 import { supabase } from '../supabase.js';
+import { broadcastLivePublish } from '../lib/liveSync.js';
 import { type SweetAlertOptions } from './SweetAlertModal.js';
 export function stripHtmlForEditing(html: string): string {
   if (!html) return '';
@@ -279,6 +280,7 @@ export function ProgrammesModule({
       }
 
       notify('Programme saved successfully.');
+      broadcastLivePublish({ module: 'programmes' });
       await onRefresh();
       showAlert?.({
         type: 'success',
@@ -307,6 +309,7 @@ export function ProgrammesModule({
     if (error) notify(error.message, true);
     else {
       notify('Programme deleted.');
+      broadcastLivePublish({ module: 'programmes' });
       await onRefresh();
     }
   };
@@ -881,6 +884,7 @@ export function ProjectsModule({
       }
 
       notify('Project saved successfully.');
+      broadcastLivePublish({ module: 'projects' });
       await onRefresh();
       showAlert?.({
         type: 'success',
@@ -1470,6 +1474,7 @@ export function StoriesModule({
         }
 
         notify('Story of Change updated successfully.');
+        broadcastLivePublish({ module: 'stories' });
         showAlert?.({
           type: 'success',
           title: 'Story Updated Successfully!',
@@ -1506,6 +1511,7 @@ export function StoriesModule({
         }
 
         notify('Story of Change published successfully.');
+        broadcastLivePublish({ module: 'stories' });
         showAlert?.({
           type: 'success',
           title: 'Story Published Successfully!',
@@ -2055,6 +2061,7 @@ export function NewsAndEventsModule({
         }
 
         notify('News article updated successfully.');
+        broadcastLivePublish({ module: 'articles' });
         showAlert?.({
           type: 'success',
           title: 'News Article Updated!',
@@ -2091,6 +2098,7 @@ export function NewsAndEventsModule({
         }
 
         notify('News article published successfully.');
+        broadcastLivePublish({ module: 'articles' });
         showAlert?.({
           type: 'success',
           title: 'News Article Published!',
@@ -2168,6 +2176,7 @@ export function NewsAndEventsModule({
       }
 
       notify('Event published successfully.');
+      broadcastLivePublish({ module: 'events' });
       await onRefresh();
       showAlert?.({
         type: 'success',

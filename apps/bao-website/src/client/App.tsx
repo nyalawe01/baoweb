@@ -72,13 +72,40 @@ export function App() {
     };
     window.addEventListener('focus', onWindowFocus);
 
-    // Auto-poll every 10 seconds so changes reflect live without manual reload
+    // Cross-tab immediate sync via BroadcastChannel
+    let broadcastChannel: BroadcastChannel | null = null;
+    try {
+      broadcastChannel = new BroadcastChannel('bao_live_sync');
+      broadcastChannel.onmessage = (event) => {
+        if (event.data?.type === 'CONTENT_UPDATED') {
+          console.log('[Live Sync] Instant publish from CMS detected, refreshing site data...', event.data);
+          loadFreshSiteData();
+        }
+      };
+    } catch {
+      // BroadcastChannel unsupported or restricted in browser
+    }
+
+    // Cross-tab immediate sync via localStorage storage event
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === 'bao_live_content_timestamp') {
+        console.log('[Live Sync] LocalStorage publish trigger detected, refreshing site data...');
+        loadFreshSiteData();
+      }
+    };
+    window.addEventListener('storage', onStorage);
+
+    // Live auto-poll every 4 seconds so changes reflect live without manual reload
     const pollInterval = setInterval(() => {
       loadFreshSiteData();
-    }, 10000);
+    }, 4000);
 
     return () => {
       window.removeEventListener('focus', onWindowFocus);
+      window.removeEventListener('storage', onStorage);
+      if (broadcastChannel) {
+        broadcastChannel.close();
+      }
       clearInterval(pollInterval);
     };
   }, []);

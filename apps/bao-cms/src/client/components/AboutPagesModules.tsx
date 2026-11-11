@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Sparkles,
   Save,
@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../supabase.js';
 import { HeroBannerImageUploader } from './HeroBannerImageUploader.js';
+import { broadcastLivePublish, AutoSaveStatusBadge, type AutoSaveStatus } from '../lib/liveSync.js';
 
 export interface SweetAlertOptions {
   type: 'success' | 'error' | 'warning' | 'info' | 'loading';
@@ -68,6 +69,10 @@ export function VisionAndMissionModule({
   const orgVal = getSettingValue(orgSetting) || {};
 
   const [saving, setSaving] = useState(false);
+  const [autoStatus, setAutoStatus] = useState<AutoSaveStatus>('idle');
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const isLoadedRef = useRef(false);
+  const autoSaveTimerRef = useRef<any>(null);
 
   // 1. Page Banner
   const [heroBadge, setHeroBadge] = useState(
@@ -206,13 +211,17 @@ export function VisionAndMissionModule({
     setCoreValues(next);
   };
 
-  const handleSave = async () => {
-    setSaving(true);
-    showAlert?.({
-      type: 'loading',
-      title: 'Saving Our Vision & Mission...',
-      message: 'Updating vision, mission, core values cards, and institutional commitment...',
-    });
+  const handleSave = async (isManual = true) => {
+    if (isManual) {
+      setSaving(true);
+      showAlert?.({
+        type: 'loading',
+        title: 'Saving Our Vision & Mission...',
+        message: 'Updating vision, mission, core values cards, and institutional commitment...',
+      });
+    } else {
+      setAutoStatus('saving');
+    }
 
     try {
       const payload = {
@@ -251,26 +260,57 @@ export function VisionAndMissionModule({
         { onConflict: 'key' }
       );
 
-      await onRefresh();
-      setSaving(false);
-      notify('Our Vision & Mission successfully updated and live!');
-      showAlert?.({
-        type: 'success',
-        title: 'Our Vision & Mission Saved!',
-        message: 'Vision, mission statements, core values, and institutional commitment have been published to the live website.',
-        websiteUrl: 'http://localhost:3000/mission-vision',
-        websiteLabel: 'View Live Page ↗',
-      });
+      // Instant live push to website
+      broadcastLivePublish({ module: 'vision_and_mission', key: 'vision_and_mission' });
+      setAutoStatus('saved');
+      setLastSaved(new Date());
+
+      if (isManual) {
+        await onRefresh();
+        setSaving(false);
+        notify('Our Vision & Mission successfully updated and live!');
+        showAlert?.({
+          type: 'success',
+          title: 'Our Vision & Mission Saved!',
+          message: 'Vision, mission statements, core values, and institutional commitment have been published to the live website.',
+          websiteUrl: 'http://localhost:3000/mission-vision',
+          websiteLabel: 'View Live Page ↗',
+        });
+      }
     } catch (err: any) {
-      setSaving(false);
-      notify(err.message || 'Failed to save Vision & Mission', true);
-      showAlert?.({
-        type: 'error',
-        title: 'Error Saving Settings',
-        message: err.message || 'An error occurred while saving to the database.',
-      });
+      if (isManual) {
+        setSaving(false);
+        notify(err.message || 'Failed to save Vision & Mission', true);
+        showAlert?.({
+          type: 'error',
+          title: 'Error Saving Settings',
+          message: err.message || 'An error occurred while saving to the database.',
+        });
+      } else {
+        setAutoStatus('error');
+      }
     }
   };
+
+  // Skip auto-save on initial mount, then auto-save on subsequent changes
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      isLoadedRef.current = true;
+    }, 700);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!isLoadedRef.current) return;
+    setAutoStatus('saving');
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    autoSaveTimerRef.current = setTimeout(() => {
+      handleSave(false);
+    }, 1200);
+    return () => {
+      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    };
+  }, [heroBadge, heading, heroImage, vision, mission, coreValues, commitmentTitle, commitmentText, commitmentImageUrl]);
 
   return (
     <div className="space-y-6">
@@ -285,7 +325,8 @@ export function VisionAndMissionModule({
             Our driving purpose, core institutional values, and commitment to children
           </p>
         </div>
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex items-center gap-3 shrink-0 flex-wrap">
+          <AutoSaveStatusBadge status={autoStatus} lastSaved={lastSaved} />
           <a
             href="http://localhost:3000/mission-vision"
             target="_blank"
@@ -295,7 +336,7 @@ export function VisionAndMissionModule({
             <ExternalLink className="w-3.5 h-3.5" /> View Live Page
           </a>
           <button
-            onClick={handleSave}
+            onClick={() => handleSave(true)}
             disabled={saving}
             className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-black text-xs font-extrabold flex items-center gap-2 shadow-none transition cursor-pointer disabled:opacity-50"
           >
@@ -563,6 +604,10 @@ export function OurHistoryModule({
   const orgVal = getSettingValue(orgSetting) || {};
 
   const [saving, setSaving] = useState(false);
+  const [autoStatus, setAutoStatus] = useState<AutoSaveStatus>('idle');
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const isLoadedRef = useRef(false);
+  const autoSaveTimerRef = useRef<any>(null);
 
   // 1. Page Banner
   const [heroBadge, setHeroBadge] = useState(
@@ -621,13 +666,17 @@ export function OurHistoryModule({
     }
   }, [siteSettings]);
 
-  const handleSave = async () => {
-    setSaving(true);
-    showAlert?.({
-      type: 'loading',
-      title: 'Saving Our History Page...',
-      message: 'Writing narrative and milestones to the database...',
-    });
+  const handleSave = async (isManual = true) => {
+    if (isManual) {
+      setSaving(true);
+      showAlert?.({
+        type: 'loading',
+        title: 'Saving Our History Page...',
+        message: 'Writing narrative and milestones to the database...',
+      });
+    } else {
+      setAutoStatus('saving');
+    }
 
     try {
       const payload = {
@@ -665,26 +714,55 @@ export function OurHistoryModule({
         { onConflict: 'key' }
       );
 
-      await onRefresh();
-      setSaving(false);
-      notify('Our History successfully saved and published!');
-      showAlert?.({
-        type: 'success',
-        title: 'Our History Saved!',
-        message: 'The history narrative, milestones block, and hero banner are now updated live on the website.',
-        websiteUrl: 'http://localhost:3000/our-history',
-        websiteLabel: 'View Live Page ↗',
-      });
+      broadcastLivePublish({ module: 'our_history', key: 'our_history' });
+      setAutoStatus('saved');
+      setLastSaved(new Date());
+
+      if (isManual) {
+        await onRefresh();
+        setSaving(false);
+        notify('Our History successfully saved and published!');
+        showAlert?.({
+          type: 'success',
+          title: 'Our History Saved!',
+          message: 'The history narrative, milestones block, and hero banner are now updated live on the website.',
+          websiteUrl: 'http://localhost:3000/our-history',
+          websiteLabel: 'View Live Page ↗',
+        });
+      }
     } catch (err: any) {
-      setSaving(false);
-      notify(err.message || 'Failed to save Our History', true);
-      showAlert?.({
-        type: 'error',
-        title: 'Error Saving History',
-        message: err.message || 'An error occurred while saving to the database.',
-      });
+      if (isManual) {
+        setSaving(false);
+        notify(err.message || 'Failed to save Our History', true);
+        showAlert?.({
+          type: 'error',
+          title: 'Error Saving History',
+          message: err.message || 'An error occurred while saving to the database.',
+        });
+      } else {
+        setAutoStatus('error');
+      }
     }
   };
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      isLoadedRef.current = true;
+    }, 700);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!isLoadedRef.current) return;
+    setAutoStatus('saving');
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    autoSaveTimerRef.current = setTimeout(() => {
+      handleSave(false);
+    }, 1200);
+    return () => {
+      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    };
+  }, [heroBadge, title, heroImage, historyText, blockBadge, blockTitle, blockText, blockImage, blockImageCaption]);
 
   return (
     <div className="space-y-6">
@@ -699,7 +777,8 @@ export function OurHistoryModule({
             Over 17 years of empowering street-connected children and families in Tanzania
           </p>
         </div>
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex items-center gap-3 shrink-0 flex-wrap">
+          <AutoSaveStatusBadge status={autoStatus} lastSaved={lastSaved} />
           <a
             href="http://localhost:3000/our-history"
             target="_blank"
@@ -709,7 +788,7 @@ export function OurHistoryModule({
             <ExternalLink className="w-3.5 h-3.5" /> View Live Page
           </a>
           <button
-            onClick={handleSave}
+            onClick={() => handleSave(true)}
             disabled={saving}
             className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-black text-xs font-extrabold flex items-center gap-2 shadow-none transition cursor-pointer disabled:opacity-50"
           >
@@ -869,6 +948,10 @@ export function LeadershipAndGovernanceModule({
   const govVal = isConfigured ? rawGovVal : {};
 
   const [saving, setSaving] = useState(false);
+  const [autoStatus, setAutoStatus] = useState<AutoSaveStatus>('idle');
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const isLoadedRef = useRef(false);
+  const autoSaveTimerRef = useRef<any>(null);
 
   // 1. Page Banner
   const [heroBadge, setHeroBadge] = useState(
@@ -1047,7 +1130,7 @@ export function LeadershipAndGovernanceModule({
     };
     setMembers(updated);
     setEditingMemberIdx(null);
-    notify(`Updated ${editName.trim()} details! Remember to click "Save Leadership & Governance" to publish.`);
+    notify(`Updated ${editName.trim()} details! Auto-saved and published to live website.`);
   };
 
   useEffect(() => {
@@ -1092,13 +1175,17 @@ export function LeadershipAndGovernanceModule({
     setMembers(members.filter((_, i) => i !== idx));
   };
 
-  const handleSave = async () => {
-    setSaving(true);
-    showAlert?.({
-      type: 'loading',
-      title: 'Saving Leadership & Governance...',
-      message: 'Writing governance mandate and leadership team roster to database...',
-    });
+  const handleSave = async (isManual = true) => {
+    if (isManual) {
+      setSaving(true);
+      showAlert?.({
+        type: 'loading',
+        title: 'Saving Leadership & Governance...',
+        message: 'Writing governance mandate and leadership team roster to database...',
+      });
+    } else {
+      setAutoStatus('saving');
+    }
 
     try {
       const payload = {
@@ -1123,26 +1210,55 @@ export function LeadershipAndGovernanceModule({
       );
       if (error) throw error;
 
-      await onRefresh();
-      setSaving(false);
-      notify('Leadership & Governance successfully saved and published!');
-      showAlert?.({
-        type: 'success',
-        title: 'Leadership & Governance Saved!',
-        message: 'The governance mandate, staff directory, and leadership roster are live on the website.',
-        websiteUrl: 'http://localhost:3000/leadership-governance',
-        websiteLabel: 'View Live Page ↗',
-      });
+      broadcastLivePublish({ module: 'leadership_and_governance', key: 'leadership_and_governance' });
+      setAutoStatus('saved');
+      setLastSaved(new Date());
+
+      if (isManual) {
+        await onRefresh();
+        setSaving(false);
+        notify('Leadership & Governance successfully saved and published!');
+        showAlert?.({
+          type: 'success',
+          title: 'Leadership & Governance Saved!',
+          message: 'The governance mandate, staff directory, and leadership roster are live on the website.',
+          websiteUrl: 'http://localhost:3000/leadership-governance',
+          websiteLabel: 'View Live Page ↗',
+        });
+      }
     } catch (err: any) {
-      setSaving(false);
-      notify(err.message || 'Failed to save Leadership & Governance', true);
-      showAlert?.({
-        type: 'error',
-        title: 'Error Saving Settings',
-        message: err.message || 'An error occurred while saving to the database.',
-      });
+      if (isManual) {
+        setSaving(false);
+        notify(err.message || 'Failed to save Leadership & Governance', true);
+        showAlert?.({
+          type: 'error',
+          title: 'Error Saving Settings',
+          message: err.message || 'An error occurred while saving to the database.',
+        });
+      } else {
+        setAutoStatus('error');
+      }
     }
   };
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      isLoadedRef.current = true;
+    }, 700);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!isLoadedRef.current) return;
+    setAutoStatus('saving');
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    autoSaveTimerRef.current = setTimeout(() => {
+      handleSave(false);
+    }, 1200);
+    return () => {
+      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    };
+  }, [heroBadge, heroTitle, heroImage, sectionBadge, sectionTitle, narrativeText, staffBadge, staffTitle, members]);
 
   return (
     <div className="space-y-6">
@@ -1157,7 +1273,8 @@ export function LeadershipAndGovernanceModule({
             Board of trustees, executive leadership, and multidisciplinary staff practitioners
           </p>
         </div>
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex items-center gap-3 shrink-0 flex-wrap">
+          <AutoSaveStatusBadge status={autoStatus} lastSaved={lastSaved} />
           <a
             href="http://localhost:3000/leadership-governance"
             target="_blank"
@@ -1167,7 +1284,7 @@ export function LeadershipAndGovernanceModule({
             <ExternalLink className="w-3.5 h-3.5" /> View Live Page
           </a>
           <button
-            onClick={handleSave}
+            onClick={() => handleSave(true)}
             disabled={saving}
             className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-black text-xs font-extrabold flex items-center gap-2 shadow-none transition cursor-pointer disabled:opacity-50"
           >
@@ -1587,6 +1704,10 @@ export function AboutStreetChildrenModule({
   const ascVal = isConfigured ? rawAscVal : {};
 
   const [saving, setSaving] = useState(false);
+  const [autoStatus, setAutoStatus] = useState<AutoSaveStatus>('idle');
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const isLoadedRef = useRef(false);
+  const autoSaveTimerRef = useRef<any>(null);
 
   // 1. Hero Banner
   const [heroBadge, setHeroBadge] = useState(
@@ -1672,13 +1793,17 @@ export function AboutStreetChildrenModule({
     setPillars(next);
   };
 
-  const handleSave = async () => {
-    setSaving(true);
-    showAlert?.({
-      type: 'loading',
-      title: 'Saving About Street Children...',
-      message: 'Writing narrative, pillars, and protection context to database...',
-    });
+  const handleSave = async (isManual = true) => {
+    if (isManual) {
+      setSaving(true);
+      showAlert?.({
+        type: 'loading',
+        title: 'Saving About Street Children...',
+        message: 'Writing narrative, pillars, and protection context to database...',
+      });
+    } else {
+      setAutoStatus('saving');
+    }
 
     try {
       const payload = {
@@ -1708,26 +1833,70 @@ export function AboutStreetChildrenModule({
       );
       if (error) throw error;
 
-      await onRefresh();
-      setSaving(false);
-      notify('About Street Children successfully saved and published!');
-      showAlert?.({
-        type: 'success',
-        title: 'About Street Children Saved!',
-        message: 'Child protection narrative, rights context, and core pillars are now live on the website.',
-        websiteUrl: 'http://localhost:3000/about-street-children',
-        websiteLabel: 'View Live Page ↗',
-      });
+      broadcastLivePublish({ module: 'about_street_children', key: 'about_street_children' });
+      setAutoStatus('saved');
+      setLastSaved(new Date());
+
+      if (isManual) {
+        await onRefresh();
+        setSaving(false);
+        notify('About Street Children successfully saved and published!');
+        showAlert?.({
+          type: 'success',
+          title: 'About Street Children Saved!',
+          message: 'Child protection narrative, rights context, and core pillars are now live on the website.',
+          websiteUrl: 'http://localhost:3000/about-street-children',
+          websiteLabel: 'View Live Page ↗',
+        });
+      }
     } catch (err: any) {
-      setSaving(false);
-      notify(err.message || 'Failed to save About Street Children', true);
-      showAlert?.({
-        type: 'error',
-        title: 'Error Saving Settings',
-        message: err.message || 'An error occurred while saving to the database.',
-      });
+      if (isManual) {
+        setSaving(false);
+        notify(err.message || 'Failed to save About Street Children', true);
+        showAlert?.({
+          type: 'error',
+          title: 'Error Saving Settings',
+          message: err.message || 'An error occurred while saving to the database.',
+        });
+      } else {
+        setAutoStatus('error');
+      }
     }
   };
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      isLoadedRef.current = true;
+    }, 700);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!isLoadedRef.current) return;
+    setAutoStatus('saving');
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    autoSaveTimerRef.current = setTimeout(() => {
+      handleSave(false);
+    }, 1200);
+    return () => {
+      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    };
+  }, [
+    heroBadge,
+    title,
+    heroImage,
+    leadTitle,
+    leadDescription,
+    contextHeading,
+    contextText,
+    contextImage,
+    pillars,
+    spotlightBadge,
+    spotlightHeading,
+    spotlightText,
+    spotlightImage,
+    spotlightCaption,
+  ]);
 
   return (
     <div className="space-y-6">
@@ -1742,7 +1911,8 @@ export function AboutStreetChildrenModule({
             Understanding the realities, rights, and potential of street-connected children
           </p>
         </div>
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex items-center gap-3 shrink-0 flex-wrap">
+          <AutoSaveStatusBadge status={autoStatus} lastSaved={lastSaved} />
           <a
             href="http://localhost:3000/about-street-children"
             target="_blank"
@@ -1752,7 +1922,7 @@ export function AboutStreetChildrenModule({
             <ExternalLink className="w-3.5 h-3.5" /> View Live Page
           </a>
           <button
-            onClick={handleSave}
+            onClick={() => handleSave(true)}
             disabled={saving}
             className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-black text-xs font-extrabold flex items-center gap-2 shadow-none transition cursor-pointer disabled:opacity-50"
           >

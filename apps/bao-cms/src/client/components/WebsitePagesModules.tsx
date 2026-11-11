@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Save,
   Sparkles,
@@ -19,6 +19,7 @@ import {
 import { supabase } from '../supabase.js';
 import { type SweetAlertOptions } from './SweetAlertModal.js';
 import { HeroBannerImageUploader } from './HeroBannerImageUploader.js';
+import { broadcastLivePublish, AutoSaveStatusBadge, type AutoSaveStatus } from '../lib/liveSync.js';
 
 interface PageModuleBaseProps {
   siteSettings: any[];
@@ -67,6 +68,10 @@ export function ProgrammesPageModule({
       : 'Babawatoto Organization executes six core strategic programmes in Tanzania: Child Protection & Street Outreach, Catch-up MEMKWA Education, Creative Arts (HEART), Youth Livelihoods & Vocational Training, Community Advocacy, and Human Rights & Reintegration.'
   );
   const [isSaving, setIsSaving] = useState(false);
+  const [autoStatus, setAutoStatus] = useState<AutoSaveStatus>('idle');
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const isLoadedRef = useRef(false);
+  const autoSaveTimerRef = useRef<any>(null);
 
   useEffect(() => {
     if (existingSetting) {
@@ -83,14 +88,18 @@ export function ProgrammesPageModule({
     }
   }, [siteSettings]);
 
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSaving(true);
-    showAlert?.({
-      type: 'loading',
-      title: 'Saving Programmes Page Content...',
-      message: 'Persisting changes to Supabase database...',
-    });
+  const handleSave = async (e?: React.FormEvent, isManual = true) => {
+    if (e) e.preventDefault();
+    if (isManual) {
+      setIsSaving(true);
+      showAlert?.({
+        type: 'loading',
+        title: 'Saving Programmes Page Content...',
+        message: 'Persisting changes to Supabase database...',
+      });
+    } else {
+      setAutoStatus('saving');
+    }
 
     try {
       const payload = {
@@ -109,26 +118,55 @@ export function ProgrammesPageModule({
       );
       if (error) throw error;
 
-      showAlert?.({
-        type: 'success',
-        title: 'Programmes Page Saved',
-        message: 'Content updated and live on website.',
-        websiteUrl: 'http://localhost:3000/programmes',
-        websiteLabel: 'View Programmes Page',
-      });
-      notify('Programmes page updated.');
-      await onRefresh();
+      broadcastLivePublish({ module: 'programmes_page_settings', key: 'programmes_page_settings' });
+      setAutoStatus('saved');
+      setLastSaved(new Date());
+
+      if (isManual) {
+        showAlert?.({
+          type: 'success',
+          title: 'Programmes Page Saved',
+          message: 'Content updated and live on website.',
+          websiteUrl: 'http://localhost:3000/programmes',
+          websiteLabel: 'View Programmes Page',
+        });
+        notify('Programmes page updated.');
+        await onRefresh();
+      }
     } catch (err: any) {
-      showAlert?.({
-        type: 'error',
-        title: 'Save Failed',
-        message: err.message || 'Error occurred while saving.',
-      });
-      notify(err.message, true);
+      if (isManual) {
+        showAlert?.({
+          type: 'error',
+          title: 'Save Failed',
+          message: err.message || 'Error occurred while saving.',
+        });
+        notify(err.message, true);
+      } else {
+        setAutoStatus('error');
+      }
     } finally {
-      setIsSaving(false);
+      if (isManual) setIsSaving(false);
     }
   };
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      isLoadedRef.current = true;
+    }, 700);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!isLoadedRef.current) return;
+    setAutoStatus('saving');
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    autoSaveTimerRef.current = setTimeout(() => {
+      handleSave(undefined, false);
+    }, 1200);
+    return () => {
+      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    };
+  }, [heroBadge, heroTitle, heroImage, leadTitle, leadDescription]);
 
   return (
     <div className="space-y-6">
@@ -145,15 +183,18 @@ export function ProgrammesPageModule({
             Edit the hero banner, titles, and lead narrative for the /programmes page.
           </p>
         </div>
-        <a
-          href="http://localhost:3000/programmes"
-          target="_blank"
-          rel="noreferrer"
-          className="px-3.5 py-2 text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition flex items-center gap-1.5"
-        >
-          <ExternalLink className="w-4 h-4" />
-          Preview Live Page
-        </a>
+        <div className="flex items-center gap-3 flex-wrap">
+          <AutoSaveStatusBadge status={autoStatus} lastSaved={lastSaved} />
+          <a
+            href="http://localhost:3000/programmes"
+            target="_blank"
+            rel="noreferrer"
+            className="px-3.5 py-2 text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition flex items-center gap-1.5"
+          >
+            <ExternalLink className="w-4 h-4" />
+            Preview Live Page
+          </a>
+        </div>
       </div>
 
       <form onSubmit={handleSave} className="bg-white border border-gray-200 p-6 rounded-xl space-y-5">
@@ -214,7 +255,8 @@ export function ProgrammesPageModule({
           />
         </div>
 
-        <div className="pt-4 border-t border-gray-200 flex justify-end">
+        <div className="pt-4 border-t border-gray-200 flex items-center justify-between flex-wrap gap-3">
+          <AutoSaveStatusBadge status={autoStatus} lastSaved={lastSaved} />
           <button
             type="submit"
             disabled={isSaving}
@@ -264,6 +306,10 @@ export function ProjectsPageModule({
       : 'Babawatoto Centre executes structured humanitarian and development projects targeting street-connected children, vulnerable adolescents, young mothers, and at-risk families.'
   );
   const [isSaving, setIsSaving] = useState(false);
+  const [autoStatus, setAutoStatus] = useState<AutoSaveStatus>('idle');
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const isLoadedRef = useRef(false);
+  const autoSaveTimerRef = useRef<any>(null);
 
   useEffect(() => {
     if (existingSetting) {
@@ -280,14 +326,18 @@ export function ProjectsPageModule({
     }
   }, [siteSettings]);
 
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSaving(true);
-    showAlert?.({
-      type: 'loading',
-      title: 'Saving Projects Page Content...',
-      message: 'Persisting changes to Supabase database...',
-    });
+  const handleSave = async (e?: React.FormEvent, isManual = true) => {
+    if (e) e.preventDefault();
+    if (isManual) {
+      setIsSaving(true);
+      showAlert?.({
+        type: 'loading',
+        title: 'Saving Projects Page Content...',
+        message: 'Persisting changes to Supabase database...',
+      });
+    } else {
+      setAutoStatus('saving');
+    }
 
     try {
       const payload = {
@@ -306,26 +356,55 @@ export function ProjectsPageModule({
       );
       if (error) throw error;
 
-      showAlert?.({
-        type: 'success',
-        title: 'Projects Page Saved',
-        message: 'Content updated and live on website.',
-        websiteUrl: 'http://localhost:3000/projects',
-        websiteLabel: 'View Projects Page',
-      });
-      notify('Projects page updated.');
-      await onRefresh();
+      broadcastLivePublish({ module: 'projects_page_settings', key: 'projects_page_settings' });
+      setAutoStatus('saved');
+      setLastSaved(new Date());
+
+      if (isManual) {
+        showAlert?.({
+          type: 'success',
+          title: 'Projects Page Saved',
+          message: 'Content updated and live on website.',
+          websiteUrl: 'http://localhost:3000/projects',
+          websiteLabel: 'View Projects Page',
+        });
+        notify('Projects page updated.');
+        await onRefresh();
+      }
     } catch (err: any) {
-      showAlert?.({
-        type: 'error',
-        title: 'Save Failed',
-        message: err.message || 'Error occurred while saving.',
-      });
-      notify(err.message, true);
+      if (isManual) {
+        showAlert?.({
+          type: 'error',
+          title: 'Save Failed',
+          message: err.message || 'Error occurred while saving.',
+        });
+        notify(err.message, true);
+      } else {
+        setAutoStatus('error');
+      }
     } finally {
-      setIsSaving(false);
+      if (isManual) setIsSaving(false);
     }
   };
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      isLoadedRef.current = true;
+    }, 700);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!isLoadedRef.current) return;
+    setAutoStatus('saving');
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    autoSaveTimerRef.current = setTimeout(() => {
+      handleSave(undefined, false);
+    }, 1200);
+    return () => {
+      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    };
+  }, [heroBadge, heroTitle, heroImage, leadTitle, leadDescription]);
 
   return (
     <div className="space-y-6">
@@ -342,15 +421,18 @@ export function ProjectsPageModule({
             Edit the hero banner, titles, and lead narrative for the /projects page.
           </p>
         </div>
-        <a
-          href="http://localhost:3000/projects"
-          target="_blank"
-          rel="noreferrer"
-          className="px-3.5 py-2 text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition flex items-center gap-1.5"
-        >
-          <ExternalLink className="w-4 h-4" />
-          Preview Live Page
-        </a>
+        <div className="flex items-center gap-3 flex-wrap">
+          <AutoSaveStatusBadge status={autoStatus} lastSaved={lastSaved} />
+          <a
+            href="http://localhost:3000/projects"
+            target="_blank"
+            rel="noreferrer"
+            className="px-3.5 py-2 text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition flex items-center gap-1.5"
+          >
+            <ExternalLink className="w-4 h-4" />
+            Preview Live Page
+          </a>
+        </div>
       </div>
 
       <form onSubmit={handleSave} className="bg-white border border-gray-200 p-6 rounded-xl space-y-5">
@@ -411,7 +493,8 @@ export function ProjectsPageModule({
           />
         </div>
 
-        <div className="pt-4 border-t border-gray-200 flex justify-end">
+        <div className="pt-4 border-t border-gray-200 flex items-center justify-between flex-wrap gap-3">
+          <AutoSaveStatusBadge status={autoStatus} lastSaved={lastSaved} />
           <button
             type="submit"
             disabled={isSaving}
@@ -458,6 +541,10 @@ export function NewsPageModule({
       : 'Stay up to date with Babawatoto Organization field updates, child safeguarding interventions, community outreach dispatches, and inspiring lived experiences from across Tanzania.'
   );
   const [isSaving, setIsSaving] = useState(false);
+  const [autoStatus, setAutoStatus] = useState<AutoSaveStatus>('idle');
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const isLoadedRef = useRef(false);
+  const autoSaveTimerRef = useRef<any>(null);
 
   useEffect(() => {
     if (existingSetting) {
@@ -473,14 +560,18 @@ export function NewsPageModule({
     }
   }, [siteSettings]);
 
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSaving(true);
-    showAlert?.({
-      type: 'loading',
-      title: 'Saving News Page Content...',
-      message: 'Persisting changes to Supabase database...',
-    });
+  const handleSave = async (e?: React.FormEvent, isManual = true) => {
+    if (e) e.preventDefault();
+    if (isManual) {
+      setIsSaving(true);
+      showAlert?.({
+        type: 'loading',
+        title: 'Saving News Page Content...',
+        message: 'Persisting changes to Supabase database...',
+      });
+    } else {
+      setAutoStatus('saving');
+    }
 
     try {
       const payload = {
@@ -498,26 +589,55 @@ export function NewsPageModule({
       );
       if (error) throw error;
 
-      showAlert?.({
-        type: 'success',
-        title: 'News Page Saved',
-        message: 'Content updated and live on website.',
-        websiteUrl: 'http://localhost:3000/news',
-        websiteLabel: 'View News Page',
-      });
-      notify('News page updated.');
-      await onRefresh();
+      broadcastLivePublish({ module: 'news_events_settings', key: 'news_events_settings' });
+      setAutoStatus('saved');
+      setLastSaved(new Date());
+
+      if (isManual) {
+        showAlert?.({
+          type: 'success',
+          title: 'News Page Saved',
+          message: 'Content updated and live on website.',
+          websiteUrl: 'http://localhost:3000/news',
+          websiteLabel: 'View News Page',
+        });
+        notify('News page updated.');
+        await onRefresh();
+      }
     } catch (err: any) {
-      showAlert?.({
-        type: 'error',
-        title: 'Save Failed',
-        message: err.message || 'Error occurred while saving.',
-      });
-      notify(err.message, true);
+      if (isManual) {
+        showAlert?.({
+          type: 'error',
+          title: 'Save Failed',
+          message: err.message || 'Error occurred while saving.',
+        });
+        notify(err.message, true);
+      } else {
+        setAutoStatus('error');
+      }
     } finally {
-      setIsSaving(false);
+      if (isManual) setIsSaving(false);
     }
   };
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      isLoadedRef.current = true;
+    }, 700);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!isLoadedRef.current) return;
+    setAutoStatus('saving');
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    autoSaveTimerRef.current = setTimeout(() => {
+      handleSave(undefined, false);
+    }, 1200);
+    return () => {
+      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    };
+  }, [heroBadge, heroTitle, heroImage, leadDescription]);
 
   return (
     <div className="space-y-6">
@@ -534,15 +654,18 @@ export function NewsPageModule({
             Edit the hero banner, titles, and introduction for the /news page.
           </p>
         </div>
-        <a
-          href="http://localhost:3000/news"
-          target="_blank"
-          rel="noreferrer"
-          className="px-3.5 py-2 text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition flex items-center gap-1.5"
-        >
-          <ExternalLink className="w-4 h-4" />
-          Preview Live Page
-        </a>
+        <div className="flex items-center gap-3 flex-wrap">
+          <AutoSaveStatusBadge status={autoStatus} lastSaved={lastSaved} />
+          <a
+            href="http://localhost:3000/news"
+            target="_blank"
+            rel="noreferrer"
+            className="px-3.5 py-2 text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition flex items-center gap-1.5"
+          >
+            <ExternalLink className="w-4 h-4" />
+            Preview Live Page
+          </a>
+        </div>
       </div>
 
       <form onSubmit={handleSave} className="bg-white border border-gray-200 p-6 rounded-xl space-y-5">
@@ -591,7 +714,8 @@ export function NewsPageModule({
           />
         </div>
 
-        <div className="pt-4 border-t border-gray-200 flex justify-end">
+        <div className="pt-4 border-t border-gray-200 flex items-center justify-between flex-wrap gap-3">
+          <AutoSaveStatusBadge status={autoStatus} lastSaved={lastSaved} />
           <button
             type="submit"
             disabled={isSaving}
@@ -643,6 +767,10 @@ export function PublicationsPageModule({
       : 'Babawatoto Centre for Children and Youth Trust (BAO) is committed to absolute governance transparency and child safeguarding integrity. Browse and download verified annual reports, child protection guidelines, and MEL evaluations.'
   );
   const [isSaving, setIsSaving] = useState(false);
+  const [autoStatus, setAutoStatus] = useState<AutoSaveStatus>('idle');
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const isLoadedRef = useRef(false);
+  const autoSaveTimerRef = useRef<any>(null);
 
   useEffect(() => {
     if (existingSetting) {
@@ -659,14 +787,18 @@ export function PublicationsPageModule({
     }
   }, [siteSettings]);
 
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSaving(true);
-    showAlert?.({
-      type: 'loading',
-      title: 'Saving Publications Page Content...',
-      message: 'Persisting changes to Supabase database...',
-    });
+  const handleSave = async (e?: React.FormEvent, isManual = true) => {
+    if (e) e.preventDefault();
+    if (isManual) {
+      setIsSaving(true);
+      showAlert?.({
+        type: 'loading',
+        title: 'Saving Publications Page Content...',
+        message: 'Persisting changes to Supabase database...',
+      });
+    } else {
+      setAutoStatus('saving');
+    }
 
     try {
       const payload = {
@@ -693,26 +825,55 @@ export function PublicationsPageModule({
       if (r1.error) throw r1.error;
       if (r2.error) throw r2.error;
 
-      showAlert?.({
-        type: 'success',
-        title: 'Publications Page Saved',
-        message: 'Content updated and live on website.',
-        websiteUrl: 'http://localhost:3000/resources',
-        websiteLabel: 'View Resources Page',
-      });
-      notify('Publications page updated.');
-      await onRefresh();
+      broadcastLivePublish({ module: 'resources_page_settings', key: 'resources_page_settings' });
+      setAutoStatus('saved');
+      setLastSaved(new Date());
+
+      if (isManual) {
+        showAlert?.({
+          type: 'success',
+          title: 'Publications Page Saved',
+          message: 'Content updated and live on website.',
+          websiteUrl: 'http://localhost:3000/resources',
+          websiteLabel: 'View Resources Page',
+        });
+        notify('Publications page updated.');
+        await onRefresh();
+      }
     } catch (err: any) {
-      showAlert?.({
-        type: 'error',
-        title: 'Save Failed',
-        message: err.message || 'Error occurred while saving.',
-      });
-      notify(err.message, true);
+      if (isManual) {
+        showAlert?.({
+          type: 'error',
+          title: 'Save Failed',
+          message: err.message || 'Error occurred while saving.',
+        });
+        notify(err.message, true);
+      } else {
+        setAutoStatus('error');
+      }
     } finally {
-      setIsSaving(false);
+      if (isManual) setIsSaving(false);
     }
   };
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      isLoadedRef.current = true;
+    }, 700);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!isLoadedRef.current) return;
+    setAutoStatus('saving');
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    autoSaveTimerRef.current = setTimeout(() => {
+      handleSave(undefined, false);
+    }, 1200);
+    return () => {
+      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    };
+  }, [heroBadge, heroTitle, heroImage, leadTitle, leadDescription]);
 
   return (
     <div className="space-y-6">
@@ -729,15 +890,18 @@ export function PublicationsPageModule({
             Edit the hero banner, titles, and lead narrative for the /resources page.
           </p>
         </div>
-        <a
-          href="http://localhost:3000/resources"
-          target="_blank"
-          rel="noreferrer"
-          className="px-3.5 py-2 text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition flex items-center gap-1.5"
-        >
-          <ExternalLink className="w-4 h-4" />
-          Preview Live Page
-        </a>
+        <div className="flex items-center gap-3 flex-wrap">
+          <AutoSaveStatusBadge status={autoStatus} lastSaved={lastSaved} />
+          <a
+            href="http://localhost:3000/resources"
+            target="_blank"
+            rel="noreferrer"
+            className="px-3.5 py-2 text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition flex items-center gap-1.5"
+          >
+            <ExternalLink className="w-4 h-4" />
+            Preview Live Page
+          </a>
+        </div>
       </div>
 
       <form onSubmit={handleSave} className="bg-white border border-gray-200 p-6 rounded-xl space-y-5">
@@ -798,7 +962,8 @@ export function PublicationsPageModule({
           />
         </div>
 
-        <div className="pt-4 border-t border-gray-200 flex justify-end">
+        <div className="pt-4 border-t border-gray-200 flex items-center justify-between flex-wrap gap-3">
+          <AutoSaveStatusBadge status={autoStatus} lastSaved={lastSaved} />
           <button
             type="submit"
             disabled={isSaving}
@@ -850,6 +1015,10 @@ export function GetInvolvedPageModule({
       : 'Whether you are an individual volunteer, community mentor, educator, or institutional donor, your contribution makes a direct difference in restoring dignity to street-connected children.'
   );
   const [isSaving, setIsSaving] = useState(false);
+  const [autoStatus, setAutoStatus] = useState<AutoSaveStatus>('idle');
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const isLoadedRef = useRef(false);
+  const autoSaveTimerRef = useRef<any>(null);
 
   useEffect(() => {
     if (existingSetting) {
@@ -866,14 +1035,18 @@ export function GetInvolvedPageModule({
     }
   }, [siteSettings]);
 
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSaving(true);
-    showAlert?.({
-      type: 'loading',
-      title: 'Saving Get Involved Page Content...',
-      message: 'Persisting changes to Supabase database...',
-    });
+  const handleSave = async (e?: React.FormEvent, isManual = true) => {
+    if (e) e.preventDefault();
+    if (isManual) {
+      setIsSaving(true);
+      showAlert?.({
+        type: 'loading',
+        title: 'Saving Get Involved Page Content...',
+        message: 'Persisting changes to Supabase database...',
+      });
+    } else {
+      setAutoStatus('saving');
+    }
 
     try {
       const payload = {
@@ -898,28 +1071,56 @@ export function GetInvolvedPageModule({
       ]);
       if (r1.error) throw r1.error;
       if (r2.error) throw r2.error;
-      if (error) throw error;
 
-      showAlert?.({
-        type: 'success',
-        title: 'Get Involved Page Saved',
-        message: 'Content updated and live on website.',
-        websiteUrl: 'http://localhost:3000/get-involved',
-        websiteLabel: 'View Get Involved Page',
-      });
-      notify('Get Involved page updated.');
-      await onRefresh();
+      broadcastLivePublish({ module: 'get_involved_page_settings', key: 'get_involved_page_settings' });
+      setAutoStatus('saved');
+      setLastSaved(new Date());
+
+      if (isManual) {
+        showAlert?.({
+          type: 'success',
+          title: 'Get Involved Page Saved',
+          message: 'Content updated and live on website.',
+          websiteUrl: 'http://localhost:3000/get-involved',
+          websiteLabel: 'View Get Involved Page',
+        });
+        notify('Get Involved page updated.');
+        await onRefresh();
+      }
     } catch (err: any) {
-      showAlert?.({
-        type: 'error',
-        title: 'Save Failed',
-        message: err.message || 'Error occurred while saving.',
-      });
-      notify(err.message, true);
+      if (isManual) {
+        showAlert?.({
+          type: 'error',
+          title: 'Save Failed',
+          message: err.message || 'Error occurred while saving.',
+        });
+        notify(err.message, true);
+      } else {
+        setAutoStatus('error');
+      }
     } finally {
-      setIsSaving(false);
+      if (isManual) setIsSaving(false);
     }
   };
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      isLoadedRef.current = true;
+    }, 700);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!isLoadedRef.current) return;
+    setAutoStatus('saving');
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    autoSaveTimerRef.current = setTimeout(() => {
+      handleSave(undefined, false);
+    }, 1200);
+    return () => {
+      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    };
+  }, [heroBadge, heroTitle, heroImage, leadTitle, leadDescription]);
 
   return (
     <div className="space-y-6">
@@ -936,15 +1137,18 @@ export function GetInvolvedPageModule({
             Edit the hero banner, titles, and introduction narrative for the /get-involved page.
           </p>
         </div>
-        <a
-          href="http://localhost:3000/get-involved"
-          target="_blank"
-          rel="noreferrer"
-          className="px-3.5 py-2 text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition flex items-center gap-1.5"
-        >
-          <ExternalLink className="w-4 h-4" />
-          Preview Live Page
-        </a>
+        <div className="flex items-center gap-3 flex-wrap">
+          <AutoSaveStatusBadge status={autoStatus} lastSaved={lastSaved} />
+          <a
+            href="http://localhost:3000/get-involved"
+            target="_blank"
+            rel="noreferrer"
+            className="px-3.5 py-2 text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition flex items-center gap-1.5"
+          >
+            <ExternalLink className="w-4 h-4" />
+            Preview Live Page
+          </a>
+        </div>
       </div>
 
       <form onSubmit={handleSave} className="bg-white border border-gray-200 p-6 rounded-xl space-y-5">
@@ -1005,7 +1209,8 @@ export function GetInvolvedPageModule({
           />
         </div>
 
-        <div className="pt-4 border-t border-gray-200 flex justify-end">
+        <div className="pt-4 border-t border-gray-200 flex items-center justify-between flex-wrap gap-3">
+          <AutoSaveStatusBadge status={autoStatus} lastSaved={lastSaved} />
           <button
             type="submit"
             disabled={isSaving}
@@ -1079,6 +1284,10 @@ export function ContactPageModule({
   );
 
   const [isSaving, setIsSaving] = useState(false);
+  const [autoStatus, setAutoStatus] = useState<AutoSaveStatus>('idle');
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const isLoadedRef = useRef(false);
+  const autoSaveTimerRef = useRef<any>(null);
 
   useEffect(() => {
     if (existingContactSetting) {
@@ -1097,14 +1306,18 @@ export function ContactPageModule({
     }
   }, [siteSettings]);
 
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSaving(true);
-    showAlert?.({
-      type: 'loading',
-      title: 'Saving Contact Page Content...',
-      message: 'Persisting changes to Supabase database...',
-    });
+  const handleSave = async (e?: React.FormEvent, isManual = true) => {
+    if (e) e.preventDefault();
+    if (isManual) {
+      setIsSaving(true);
+      showAlert?.({
+        type: 'loading',
+        title: 'Saving Contact Page Content...',
+        message: 'Persisting changes to Supabase database...',
+      });
+    } else {
+      setAutoStatus('saving');
+    }
 
     try {
       const contactPayload = {
@@ -1155,26 +1368,55 @@ export function ContactPageModule({
       if (res2.error) throw res2.error;
       if (res3.error) throw res3.error;
 
-      showAlert?.({
-        type: 'success',
-        title: 'Contact Page Saved',
-        message: 'Contact details and page content updated and live on website.',
-        websiteUrl: 'http://localhost:3000/contact',
-        websiteLabel: 'View Contact Page',
-      });
-      notify('Contact page updated.');
-      await onRefresh();
+      broadcastLivePublish({ module: 'contact_page_settings', key: 'contact_page_settings' });
+      setAutoStatus('saved');
+      setLastSaved(new Date());
+
+      if (isManual) {
+        showAlert?.({
+          type: 'success',
+          title: 'Contact Page Saved',
+          message: 'Contact details and page content updated and live on website.',
+          websiteUrl: 'http://localhost:3000/contact',
+          websiteLabel: 'View Contact Page',
+        });
+        notify('Contact page updated.');
+        await onRefresh();
+      }
     } catch (err: any) {
-      showAlert?.({
-        type: 'error',
-        title: 'Save Failed',
-        message: err.message || 'Error occurred while saving.',
-      });
-      notify(err.message, true);
+      if (isManual) {
+        showAlert?.({
+          type: 'error',
+          title: 'Save Failed',
+          message: err.message || 'Error occurred while saving.',
+        });
+        notify(err.message, true);
+      } else {
+        setAutoStatus('error');
+      }
     } finally {
-      setIsSaving(false);
+      if (isManual) setIsSaving(false);
     }
   };
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      isLoadedRef.current = true;
+    }, 700);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!isLoadedRef.current) return;
+    setAutoStatus('saving');
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    autoSaveTimerRef.current = setTimeout(() => {
+      handleSave(undefined, false);
+    }, 1200);
+    return () => {
+      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    };
+  }, [heroBadge, heroTitle, heroImage, leadTitle, leadDescription, address, phone, email, hours, emergencyPhone]);
 
   return (
     <div className="space-y-6">
@@ -1191,15 +1433,18 @@ export function ContactPageModule({
             Edit office address, phone numbers, email, hours, and banner narrative for /contact.
           </p>
         </div>
-        <a
-          href="http://localhost:3000/contact"
-          target="_blank"
-          rel="noreferrer"
-          className="px-3.5 py-2 text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition flex items-center gap-1.5"
-        >
-          <ExternalLink className="w-4 h-4" />
-          Preview Live Page
-        </a>
+        <div className="flex items-center gap-3 flex-wrap">
+          <AutoSaveStatusBadge status={autoStatus} lastSaved={lastSaved} />
+          <a
+            href="http://localhost:3000/contact"
+            target="_blank"
+            rel="noreferrer"
+            className="px-3.5 py-2 text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition flex items-center gap-1.5"
+          >
+            <ExternalLink className="w-4 h-4" />
+            Preview Live Page
+          </a>
+        </div>
       </div>
 
       <form onSubmit={handleSave} className="bg-white border border-gray-200 p-6 rounded-xl space-y-5">
@@ -1302,7 +1547,8 @@ export function ContactPageModule({
           />
         </div>
 
-        <div className="pt-4 border-t border-gray-200 flex justify-end">
+        <div className="pt-4 border-t border-gray-200 flex items-center justify-between flex-wrap gap-3">
+          <AutoSaveStatusBadge status={autoStatus} lastSaved={lastSaved} />
           <button
             type="submit"
             disabled={isSaving}
