@@ -400,6 +400,7 @@ export function PartnersAndTeamModule({
   const [tab, setTab] = useState<'partners' | 'team'>('partners');
   const [saving, setSaving] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [isPartnerModalOpen, setIsPartnerModalOpen] = useState(false);
 
   // Partner State (Edit, Add, Direct Logo Upload)
   const [editingPartnerId, setEditingPartnerId] = useState<string | null>(null);
@@ -446,6 +447,7 @@ export function PartnersAndTeamModule({
     const existingUrl = resolvePartnerLogoUrl(p.logo_media_id) || p.logo_url || null;
     setLogoPreview(existingUrl);
     if (logoFileInputRef.current) logoFileInputRef.current.value = '';
+    setIsPartnerModalOpen(true);
   };
 
   const handleResetPartnerForm = () => {
@@ -459,6 +461,17 @@ export function PartnersAndTeamModule({
     setPendingLogoFile(null);
     setLogoPreview(null);
     if (logoFileInputRef.current) logoFileInputRef.current.value = '';
+  };
+
+  const handleOpenNewPartnerModal = () => {
+    handleResetPartnerForm();
+    setIsPartnerModalOpen(true);
+  };
+
+  const handleClosePartnerModal = () => {
+    if (saving || uploadingLogo) return;
+    setIsPartnerModalOpen(false);
+    handleResetPartnerForm();
   };
 
   const handleLogoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -573,6 +586,7 @@ export function PartnersAndTeamModule({
       }
 
       handleResetPartnerForm();
+      setIsPartnerModalOpen(false);
       await onRefresh();
     } catch (err: any) {
       notify(err.message, true);
@@ -663,43 +677,44 @@ export function PartnersAndTeamModule({
 
       {tab === 'partners' ? (
         <div className="space-y-6">
-          {/* Row 1: Registered Partners List (Full Width) */}
+          {/* Registered Partners List (Clean Full Page View) */}
           <div className="w-full bg-white rounded-xl border border-[#E5E7E5] p-5 space-y-4 shadow-xs">
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#E5E7E5] pb-3">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#E5E7E5] pb-4">
               <div>
-                <h4 className="font-extrabold text-base text-[#000000]">
+                <h4 className="font-extrabold text-base text-[#000000] flex items-center gap-2">
+                  <Handshake className="w-5 h-5 text-[#E6A500]" />
                   Registered Partners & Institutional Donors ({partners.length})
                 </h4>
-                <p className="text-xs text-[#555B57]">
-                  Stored live in database table <code>partners</code>. Click any partner card to edit its details or change its logo.
+                <p className="text-xs text-[#555B57] mt-0.5">
+                  Stored live in database table <code>partners</code>. Click any partner card or the button to edit details and upload logos in the popup modal.
                 </p>
               </div>
               <button
                 type="button"
-                onClick={handleResetPartnerForm}
-                className="px-3.5 py-1.5 rounded-lg bg-[#E6A500] text-black text-xs font-bold hover:bg-[#d49700] transition cursor-pointer flex items-center gap-1.5"
+                onClick={handleOpenNewPartnerModal}
+                className="px-4 py-2 rounded-lg bg-[#E6A500] hover:bg-[#d49700] text-black text-xs font-extrabold transition cursor-pointer flex items-center gap-2 shadow-xs"
               >
                 <Plus className="w-4 h-4" /> Add New Partner
               </button>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 max-h-[420px] overflow-y-auto pr-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 min-h-[160px]">
               {partners.map((p) => {
                 const logoUrl = resolvePartnerLogoUrl(p.logo_media_id) || p.logo_url;
-                const isSelected = editingPartnerId === p.id;
+                const isSelected = isPartnerModalOpen && editingPartnerId === p.id;
                 const categoryLabel = (p.partner_type || p.partner_category || 'institutional_donor').replace(/_/g, ' ');
                 return (
                   <div
                     key={p.id}
                     onClick={() => handleSelectPartner(p)}
-                    className={`p-4 rounded-xl border-2 transition cursor-pointer flex flex-col justify-between gap-3 ${
+                    className={`p-4 rounded-xl border transition cursor-pointer flex flex-col justify-between gap-3 group ${
                       isSelected
                         ? 'border-[#E6A500] ring-2 ring-[#E6A500] bg-amber-50/20 shadow-md'
-                        : 'border-[#E5E7E5] bg-white hover:border-[#E6A500]/60 hover:shadow-xs'
+                        : 'border-[#E5E7E5] bg-white hover:border-[#E6A500] hover:shadow-xs'
                     }`}
                   >
                     <div className="flex items-start gap-3">
-                      <div className="w-16 h-14 rounded-lg border border-[#E5E7E5] bg-white flex items-center justify-center p-1 shrink-0 overflow-hidden">
+                      <div className="w-16 h-14 rounded-lg border border-[#E5E7E5] bg-white flex items-center justify-center p-1.5 shrink-0 overflow-hidden group-hover:border-amber-300 transition">
                         {logoUrl ? (
                           <img
                             src={logoUrl}
@@ -711,19 +726,21 @@ export function PartnersAndTeamModule({
                         )}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <div className="font-bold text-sm text-[#000000] line-clamp-1">{p.name}</div>
-                        <div className="text-[11px] uppercase text-[#E6A500] font-extrabold tracking-wide">
+                        <div className="font-bold text-sm text-[#000000] line-clamp-1 group-hover:text-amber-800 transition">{p.name}</div>
+                        <div className="text-[11px] uppercase text-[#E6A500] font-extrabold tracking-wide mt-0.5">
                           {categoryLabel}
                         </div>
-                        <p className="text-xs text-[#555B57] mt-1 line-clamp-2">
-                          {p.description_en || p.partnership_focus_en || p.partnership_description_en || 'Partner supporting BAO programmes.'}
-                        </p>
+                        {p.website_url && (
+                          <div className="text-[11px] text-[#555B57] truncate mt-0.5 font-mono">
+                            {p.website_url.replace(/^https?:\/\//, '')}
+                          </div>
+                        )}
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between pt-2 border-t border-[#F4F5F4] text-xs">
-                      <span className="font-bold text-[#E6A500] flex items-center gap-1 hover:underline">
-                        <Edit3 className="w-3.5 h-3.5" /> Edit / Change Logo
+                    <div className="flex items-center justify-between pt-2.5 border-t border-[#F4F5F4] text-xs">
+                      <span className="font-bold text-[#E6A500] flex items-center gap-1 group-hover:underline">
+                        <Edit3 className="w-3.5 h-3.5" /> Edit / Replace Logo
                       </span>
                       <button
                         type="button"
@@ -731,7 +748,10 @@ export function PartnersAndTeamModule({
                           e.stopPropagation();
                           if (window.confirm(`Delete partner "${p.name}" from database?`)) {
                             await supabase.from('partners').delete().eq('id', p.id);
-                            if (editingPartnerId === p.id) handleResetPartnerForm();
+                            if (editingPartnerId === p.id) {
+                              handleResetPartnerForm();
+                              setIsPartnerModalOpen(false);
+                            }
                             await onRefresh();
                           }
                         }}
@@ -744,145 +764,205 @@ export function PartnersAndTeamModule({
                 );
               })}
               {partners.length === 0 && (
-                <p className="col-span-full text-xs text-[#555B57] py-6 text-center">No partners registered yet.</p>
+                <div className="col-span-full py-12 text-center rounded-xl border border-dashed border-[#E5E7E5] bg-[#F4F5F4]/40">
+                  <Handshake className="w-8 h-8 text-[#555B57]/50 mx-auto mb-2" />
+                  <p className="text-sm font-bold text-black">No partners registered yet</p>
+                  <p className="text-xs text-[#555B57] mt-1 mb-4">Add your institutional donors, UN agencies, or NGO partners.</p>
+                  <button
+                    type="button"
+                    onClick={handleOpenNewPartnerModal}
+                    className="px-4 py-2 rounded-lg bg-[#E6A500] text-black text-xs font-bold hover:bg-[#d49700] transition cursor-pointer inline-flex items-center gap-1.5"
+                  >
+                    <Plus className="w-4 h-4" /> Add First Partner
+                  </button>
+                </div>
               )}
             </div>
           </div>
 
-          {/* Row 2: Add / Edit Partner Form (Full Width) */}
-          <div className="w-full bg-white rounded-xl border border-[#E5E7E5] p-6 space-y-5 shadow-xs">
-            <div className="flex items-center justify-between border-b border-[#E5E7E5] pb-3">
-              <div>
-                <h4 className="font-bold text-base text-[#000000] flex items-center gap-2">
-                  <Handshake className="w-4 h-4 text-[#E6A500]" />
-                  {editingPartnerId ? `Edit Partner: ${partnerName}` : 'Add New Partner / Institutional Donor'}
-                </h4>
-                <p className="text-xs text-[#555B57]">
-                  {editingPartnerId
-                    ? 'Updating existing database partner record and logo.'
-                    : 'The logo will be uploaded and stored directly in database storage, live on the website.'}
-                </p>
-              </div>
-              {editingPartnerId && (
-                <button
-                  type="button"
-                  onClick={handleResetPartnerForm}
-                  className="text-xs font-bold text-[#E6A500] hover:underline cursor-pointer"
-                >
-                  + Add New Partner Instead
-                </button>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-[#000000] mb-1">Organization / Partner Name *</label>
-              <input
-                value={partnerName}
-                onChange={(e) => setPartnerName(e.target.value)}
-                placeholder="e.g. UNICEF, USAID, World Vision Tanzania"
-                className="w-full px-3 py-2 rounded-lg border border-[#E5E7E5] text-sm text-black font-semibold"
-              />
-            </div>
-
-            {/* Direct Image / Logo Upload Section (NO DROPDOWN) */}
-            <div className="space-y-2">
-              <label className="block text-xs font-bold text-[#000000]">
-                Partner Logo / Emblem (Direct File Upload) *
-              </label>
-
-              <input
-                ref={logoFileInputRef}
-                type="file"
-                accept="image/png,image/jpeg,image/webp,image/svg+xml"
-                onChange={handleLogoFileChange}
-                className="hidden"
-              />
-
-              {logoPreview ? (
-                <div className="p-4 rounded-xl border border-[#E5E7E5] bg-[#F4F5F4]/50 flex flex-wrap items-center justify-between gap-4">
-                  <div className="flex items-center gap-4">
-                    <div className="w-24 h-20 rounded-lg border border-[#E5E7E5] bg-white p-2 flex items-center justify-center shrink-0">
-                      <img
-                        src={logoPreview}
-                        alt="Logo preview"
-                        className="max-h-full max-w-full object-contain"
-                      />
+          {/* Partner Edit / Add Popup Modal */}
+          {isPartnerModalOpen && (
+            <div
+              className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-150"
+              onClick={(e) => {
+                if (e.target === e.currentTarget) {
+                  handleClosePartnerModal();
+                }
+              }}
+            >
+              <div
+                className="w-full max-w-2xl bg-white rounded-2xl border border-[#E5E7E5] shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-150"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Modal Header */}
+                <div className="flex items-center justify-between px-6 py-4 border-b border-[#E5E7E5] bg-[#F9FAF9]">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center shrink-0">
+                      <Handshake className="w-5 h-5 text-[#E6A500]" />
                     </div>
                     <div>
-                      <div className="text-xs font-bold text-black flex items-center gap-1.5">
-                        <Check className="w-4 h-4 text-emerald-600" />
-                        {pendingLogoFile
-                          ? `New file selected: ${pendingLogoFile.name}`
-                          : 'Current database logo active'}
-                      </div>
-                      <div className="text-[11px] text-[#555B57] mt-0.5">
-                        {pendingLogoFile
-                          ? `${Math.round(pendingLogoFile.size / 1024)} KB · Will be uploaded on save`
-                          : 'Linked to media assets library'}
-                      </div>
+                      <h4 className="font-bold text-base text-[#000000]">
+                        {editingPartnerId ? `Edit Partner: ${partnerName || 'Untitled'}` : 'Add New Partner / Institutional Donor'}
+                      </h4>
+                      <p className="text-xs text-[#555B57]">
+                        {editingPartnerId
+                          ? 'Updating existing database partner record and logo.'
+                          : 'The logo will be uploaded and stored directly in database storage, live on the website.'}
+                      </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
+                    {editingPartnerId && (
+                      <button
+                        type="button"
+                        onClick={handleResetPartnerForm}
+                        className="text-xs font-bold text-[#E6A500] hover:underline cursor-pointer mr-2"
+                      >
+                        + Add New Partner Instead
+                      </button>
+                    )}
                     <button
                       type="button"
-                      onClick={() => logoFileInputRef.current?.click()}
-                      className="px-3 py-1.5 rounded-lg border border-[#E5E7E5] bg-white text-xs font-bold hover:bg-neutral-50 text-black cursor-pointer flex items-center gap-1.5"
+                      onClick={handleClosePartnerModal}
+                      disabled={saving || uploadingLogo}
+                      className="p-1.5 rounded-lg text-[#555B57] hover:text-black hover:bg-[#E5E7E5]/50 transition cursor-pointer disabled:opacity-50"
+                      title="Close modal"
                     >
-                      <Upload className="w-3.5 h-3.5 text-[#E6A500]" /> Upload / Replace Logo
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleRemoveLogo}
-                      className="px-3 py-1.5 rounded-lg border border-red-200 bg-red-50 text-red-700 text-xs font-bold hover:bg-red-100 cursor-pointer flex items-center gap-1.5"
-                    >
-                      <X className="w-3.5 h-3.5" /> Remove
+                      <X className="w-5 h-5" />
                     </button>
                   </div>
                 </div>
-              ) : (
-                <div
-                  onClick={() => logoFileInputRef.current?.click()}
-                  className="border-2 border-dashed border-[#E5E7E5] hover:border-[#E6A500] rounded-xl p-6 text-center cursor-pointer transition bg-[#F4F5F4]/40 hover:bg-[#F4F5F4]"
-                >
-                  <Upload className="w-8 h-8 text-[#E6A500] mx-auto mb-2" />
-                  <div className="text-sm font-bold text-black">
-                    Click to Choose or Drag & Drop Partner Logo File
+
+                {/* Modal Body */}
+                <div className="p-6 space-y-5 overflow-y-auto flex-1">
+                  <div>
+                    <label className="block text-xs font-bold text-[#000000] mb-1">
+                      Organization / Partner Name *
+                    </label>
+                    <input
+                      value={partnerName}
+                      onChange={(e) => setPartnerName(e.target.value)}
+                      placeholder="e.g. UNICEF, USAID, World Vision Tanzania"
+                      className="w-full px-3 py-2 rounded-lg border border-[#E5E7E5] text-sm text-black font-semibold focus:outline-none focus:border-[#E6A500]"
+                    />
                   </div>
-                  <p className="text-xs text-[#555B57] mt-1">
-                    Accepts WebP, PNG, JPEG, SVG (transparent or white background recommended)
-                  </p>
+
+                  {/* Direct Image / Logo Upload Section */}
+                  <div className="space-y-2">
+                    <label className="block text-xs font-bold text-[#000000]">
+                      Partner Logo / Emblem (Direct File Upload) *
+                    </label>
+
+                    <input
+                      ref={logoFileInputRef}
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                      onChange={handleLogoFileChange}
+                      className="hidden"
+                    />
+
+                    {logoPreview ? (
+                      <div className="p-4 rounded-xl border border-[#E5E7E5] bg-[#F4F5F4]/50 flex flex-wrap items-center justify-between gap-4">
+                        <div className="flex items-center gap-4">
+                          <div className="w-24 h-20 rounded-lg border border-[#E5E7E5] bg-white p-2 flex items-center justify-center shrink-0">
+                            <img
+                              src={logoPreview}
+                              alt="Logo preview"
+                              className="max-h-full max-w-full object-contain"
+                            />
+                          </div>
+                          <div>
+                            <div className="text-xs font-bold text-black flex items-center gap-1.5">
+                              <Check className="w-4 h-4 text-emerald-600" />
+                              {pendingLogoFile
+                                ? `New file selected: ${pendingLogoFile.name}`
+                                : 'Current database logo active'}
+                            </div>
+                            <div className="text-[11px] text-[#555B57] mt-0.5">
+                              {pendingLogoFile
+                                ? `${Math.round(pendingLogoFile.size / 1024)} KB · Will be uploaded on save`
+                                : 'Linked to media assets library'}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => logoFileInputRef.current?.click()}
+                            className="px-3 py-1.5 rounded-lg border border-[#E5E7E5] bg-white text-xs font-bold hover:bg-neutral-50 text-black cursor-pointer flex items-center gap-1.5"
+                          >
+                            <Upload className="w-3.5 h-3.5 text-[#E6A500]" /> Upload / Replace Logo
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleRemoveLogo}
+                            className="px-3 py-1.5 rounded-lg border border-red-200 bg-red-50 text-red-700 text-xs font-bold hover:bg-red-100 cursor-pointer flex items-center gap-1.5"
+                          >
+                            <X className="w-3.5 h-3.5" /> Remove
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div
+                        onClick={() => logoFileInputRef.current?.click()}
+                        className="border-2 border-dashed border-[#E5E7E5] hover:border-[#E6A500] rounded-xl p-6 text-center cursor-pointer transition bg-[#F4F5F4]/40 hover:bg-[#F4F5F4]"
+                      >
+                        <Upload className="w-8 h-8 text-[#E6A500] mx-auto mb-2" />
+                        <div className="text-sm font-bold text-black">
+                          Click to Choose or Drag & Drop Partner Logo File
+                        </div>
+                        <p className="text-xs text-[#555B57] mt-1">
+                          Accepts WebP, PNG, JPEG, SVG (transparent or white background recommended)
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-[#000000] mb-1">
+                      Official Website URL (Optional)
+                    </label>
+                    <input
+                      value={partnerWebsite}
+                      onChange={(e) => setPartnerWebsite(e.target.value)}
+                      placeholder="https://www.nrc.no/"
+                      className="w-full px-3 py-2 rounded-lg border border-[#E5E7E5] text-sm font-mono text-black focus:outline-none focus:border-[#E6A500]"
+                    />
+                  </div>
                 </div>
-              )}
-            </div>
 
-            <div>
-              <label className="block text-xs font-bold text-[#000000] mb-1">Official Website URL (Optional)</label>
-              <input
-                value={partnerWebsite}
-                onChange={(e) => setPartnerWebsite(e.target.value)}
-                placeholder="https://www.unicef.org/tanzania/"
-                className="w-full px-3 py-2 rounded-lg border border-[#E5E7E5] text-sm font-mono text-black"
-              />
+                {/* Modal Footer */}
+                <div className="px-6 py-4 bg-[#F9FAF9] border-t border-[#E5E7E5] flex items-center justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={handleClosePartnerModal}
+                    disabled={saving || uploadingLogo}
+                    className="px-4 py-2 rounded-lg border border-[#E5E7E5] bg-white text-xs font-bold text-black hover:bg-[#F4F5F4] transition cursor-pointer disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={savePartner}
+                    disabled={saving || uploadingLogo}
+                    className="px-5 py-2 rounded-lg bg-[#E6A500] hover:bg-[#d49700] text-black font-extrabold text-xs flex items-center justify-center gap-2 cursor-pointer transition shadow-xs disabled:opacity-50"
+                  >
+                    {saving || uploadingLogo ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        {uploadingLogo ? 'Uploading Logo...' : 'Saving to Database...'}
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-4 h-4" />
+                        {editingPartnerId ? 'Save & Update Partner' : 'Add Partner & Publish to Website'}
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
             </div>
-
-            <button
-              onClick={savePartner}
-              disabled={saving || uploadingLogo}
-              className="w-full py-3 rounded-lg bg-[#E6A500] hover:bg-[#d49700] text-black font-extrabold text-sm flex items-center justify-center gap-2 cursor-pointer transition shadow-xs disabled:opacity-50"
-            >
-              {saving || uploadingLogo ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  {uploadingLogo ? 'Uploading Logo...' : 'Saving to Database...'}
-                </>
-              ) : (
-                <>
-                  <Save className="w-4 h-4" />
-                  {editingPartnerId ? 'Save & Update Partner' : 'Add Partner & Publish to Website'}
-                </>
-              )}
-            </button>
-          </div>
+          )}
         </div>
       ) : (
         <div className="space-y-6">
