@@ -691,12 +691,6 @@ export function HomeView({
                   0
                 );
                 const suffix = ind.value_suffix || (ind.measurement_unit_en === '%' ? '%' : '+');
-                const period =
-                  rec?.reporting_period ||
-                  rec?.reporting_period_label ||
-                  (lang === 'sw' ? ind.description_sw : ind.description_en) ||
-                  ind.description_en ||
-                  'Verified MEL Record';
                 return (
                   <div
                     key={ind.id}
@@ -708,9 +702,6 @@ export function HomeView({
                     </div>
                     <div className="font-extrabold text-lg text-black">
                       {label}
-                    </div>
-                    <div className="text-xs font-semibold text-black/75">
-                      {period}
                     </div>
                   </div>
                 );

@@ -1003,9 +1003,7 @@ export function ResourcesAndImpactModule({
   const [labelEn, setLabelEn] = useState('');
   const [labelSw, setLabelSw] = useState('');
   const [unit, setUnit] = useState('children');
-  const [periodLabel, setPeriodLabel] = useState('Cumulative Verified');
   const [numericValue, setNumericValue] = useState('');
-  const [sourceNote, setSourceNote] = useState('BAO MEL Records');
 
   const [pubTitle, setPubTitle] = useState('');
   const [pubSlug, setPubSlug] = useState('');
@@ -1088,9 +1086,9 @@ export function ResourcesAndImpactModule({
         await supabase.from('impact_records').delete().eq('indicator_id', indId);
         const { error: recErr } = await supabase.from('impact_records').insert({
           indicator_id: indId,
-          reporting_period: periodLabel.trim() || 'Cumulative Verified',
+          reporting_period: 'All-Time',
           numeric_value: Number(numericValue || 0),
-          verification_source: sourceNote.trim() || 'BAO MEL Records',
+          verification_source: 'Verified Record',
           status: 'published',
         });
         if (recErr) throw recErr;
@@ -1110,8 +1108,6 @@ export function ResourcesAndImpactModule({
       setLabelEn('');
       setLabelSw('');
       setNumericValue('');
-      setPeriodLabel('Cumulative Verified');
-      setSourceNote('BAO MEL Records');
     } catch (err: any) {
       notify(err.message, true);
       showAlert?.({
@@ -1299,27 +1295,6 @@ export function ResourcesAndImpactModule({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-semibold mb-1 text-black">Reporting Period</label>
-                <input
-                  value={periodLabel}
-                  onChange={(e) => setPeriodLabel(e.target.value)}
-                  placeholder="e.g. Cumulative 2024 - 2026"
-                  className="w-full px-3 py-2 rounded-lg border border-[#E5E7E5] text-sm text-black"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold mb-1 text-black">Verification Source</label>
-                <input
-                  value={sourceNote}
-                  onChange={(e) => setSourceNote(e.target.value)}
-                  placeholder="e.g. BAO MEL Records"
-                  className="w-full px-3 py-2 rounded-lg border border-[#E5E7E5] text-sm text-black"
-                />
-              </div>
-            </div>
-
             <button
               onClick={saveIndicator}
               disabled={saving}
@@ -1357,9 +1332,6 @@ export function ResourcesAndImpactModule({
                           {ind.name_en || ind.code}
                         </span>
                       </div>
-                      <div className="text-xs text-[#555B57]">
-                        Period: {rec?.reporting_period || 'Cumulative Verified'} · Source: {rec?.verification_source || ind.description_en || 'BAO MEL'}
-                      </div>
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0">
                       <button
@@ -1371,8 +1343,6 @@ export function ResourcesAndImpactModule({
                           setLabelSw(ind.name_sw || '');
                           setNumericValue(String(val || ''));
                           setUnit(ind.measurement_unit_en || 'children');
-                          setPeriodLabel(rec?.reporting_period || 'Cumulative Verified');
-                          setSourceNote(rec?.verification_source || ind.description_en || 'BAO MEL Records');
                         }}
                         className="px-2.5 py-1 text-xs font-bold text-black bg-white border border-[#E5E7E5] hover:border-black rounded cursor-pointer"
                       >

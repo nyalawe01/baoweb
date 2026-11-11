@@ -2075,13 +2075,6 @@ export function ImpactView({ lang, siteData }: { lang: LanguageCode; siteData: a
               0
             );
             const suffix = ind.value_suffix || (ind.measurement_unit_en === '%' ? '%' : '+');
-            const period =
-              rec?.reporting_period ||
-              rec?.reporting_period_label ||
-              (lang === 'sw' ? ind.description_sw : ind.description_en) ||
-              ind.description_en ||
-              'Verified MEL';
-            const sourceNote = rec?.verification_source || rec?.data_source_note || 'Annual Evaluation';
             const desc =
               tr?.description ||
               (lang === 'sw' ? ind.description_sw : ind.description_en) ||
@@ -2100,9 +2093,6 @@ export function ImpactView({ lang, siteData }: { lang: LanguageCode; siteData: a
                   {label}
                 </h3>
                 {desc && <p className="text-[18px] text-black leading-relaxed">{desc}</p>}
-                <div className="text-[15px] font-mono text-black/80 pt-3">
-                  Period: {period} · Source: {sourceNote}
-                </div>
               </div>
             );
           })}
