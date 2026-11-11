@@ -485,7 +485,7 @@ export function App() {
     { id: 'testimonies', label: 'Testimonies', icon: MessageSquareQuote },
     { id: 'resources-impact', label: 'Impact & Publications', icon: BarChart3 },
     { id: 'partners-team', label: 'Partners & Donors', icon: Handshake },
-    { id: 'media', label: 'cPanel Media Library', icon: ImageIcon },
+    { id: 'media', label: 'Gallery & Media Library', icon: ImageIcon },
   ];
 
   const navSystemGroup: { id: ActiveModule; label: string; icon: any }[] = [

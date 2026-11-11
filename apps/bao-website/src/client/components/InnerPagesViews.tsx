@@ -2938,9 +2938,9 @@ export function ResourcesView({
             ? galleryImages.map((img: any) => ({
               id: img.id,
               src: `/media/${img.storage_key}`,
-              title: img.title || img.original_filename || '',
-              alt: img.alt_text || img.title || 'Babawatoto Gallery',
-              caption: img.alt_text || '',
+              title: (lang === 'sw' ? img.title_sw : img.title_en) || img.title_en || img.title || img.original_filename || '',
+              alt: (lang === 'sw' ? img.alt_text_sw : img.alt_text_en) || img.alt_text_en || img.alt_text || img.title_en || 'Babawatoto Gallery',
+              caption: (lang === 'sw' ? img.caption_sw : img.caption_en) || img.caption_en || img.caption || img.alt_text_en || img.alt_text || '',
               isPlaceholder: false,
             }))
             : Array.from({ length: 8 }, (_, idx) => ({

@@ -73,7 +73,8 @@ export function MediaLibraryModule({
   notify: (msg: string, isErr?: boolean) => void;
 }) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [category, setCategory] = useState<MediaCategory>('organization');
+  const [filePreview, setFilePreview] = useState<string | null>(null);
+  const [category, setCategory] = useState<MediaCategory>('resources');
   const [visibility, setVisibility] = useState<'public' | 'private'>('public');
   const [title, setTitle] = useState('');
   const [altText, setAltText] = useState('');
@@ -82,21 +83,52 @@ export function MediaLibraryModule({
   const [filterCat, setFilterCat] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [replaceId, setReplaceId] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    setSelectedFile(file);
+    if (file && file.type.startsWith('image/')) {
+      setFilePreview(URL.createObjectURL(file));
+    } else {
+      setFilePreview(null);
+    }
+    if (file && !title) {
+      const cleanName = file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
+      setTitle(cleanName.charAt(0).toUpperCase() + cleanName.slice(1));
+    }
+  };
+
+  const handleRemoveSelectedFile = () => {
+    setSelectedFile(null);
+    setFilePreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
 
   const handleUpload = async () => {
-    if (!selectedFile) {
-      notify('Please choose a file to upload.', true);
+    if (!selectedFile && !replaceId) {
+      notify('Please select a photo or media file to upload.', true);
+      return;
+    }
+    if (!selectedFile && replaceId) {
+      notify('Please choose a replacement file.', true);
       return;
     }
     setUploading(true);
     try {
       const formData = new FormData();
-      formData.append('file', selectedFile);
+      if (selectedFile) formData.append('file', selectedFile);
       formData.append('category', category);
       formData.append('visibility', visibility);
-      formData.append('title', title || selectedFile.name);
-      formData.append('alt_text', altText || title || selectedFile.name);
-      formData.append('caption', caption);
+      formData.append('title', title.trim() || selectedFile?.name || 'Gallery Item');
+      formData.append('title_en', title.trim() || selectedFile?.name || 'Gallery Item');
+      formData.append('title_sw', title.trim() || selectedFile?.name || 'Gallery Item');
+      formData.append('alt_text', altText.trim() || title.trim() || selectedFile?.name || 'Gallery Item');
+      formData.append('alt_text_en', altText.trim() || title.trim() || selectedFile?.name || 'Gallery Item');
+      formData.append('alt_text_sw', altText.trim() || title.trim() || selectedFile?.name || 'Gallery Item');
+      formData.append('caption', caption.trim());
+      formData.append('caption_en', caption.trim());
+      formData.append('caption_sw', caption.trim());
 
       const endpoint = replaceId
         ? `/api/v1/media/${replaceId}/replace`
@@ -112,8 +144,8 @@ export function MediaLibraryModule({
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Upload failed');
 
-      notify(replaceId ? 'Media file replaced cleanly.' : 'Media uploaded and verified.');
-      setSelectedFile(null);
+      notify(replaceId ? 'Media file replaced cleanly.' : 'Photo/media uploaded and published to gallery.');
+      handleRemoveSelectedFile();
       setTitle('');
       setAltText('');
       setCaption('');
@@ -173,127 +205,270 @@ export function MediaLibraryModule({
     return true;
   });
 
+  const publicImagesCount = media.filter(
+    (m) => m.visibility === 'public' && m.mime_type?.startsWith('image/')
+  ).length;
+
   return (
     <div className="space-y-6">
       {/* Row 1: Upload / Replace Media File Card (Full Width) */}
-      <div className="w-full bg-white rounded-xl border border-[#E5E7E5] p-5 space-y-4 shadow-xs">
-        <h3 className="font-bold text-[#000000] flex items-center gap-2">
-          <Upload className="w-4 h-4 text-[#E6A500]" />
-          {replaceId ? 'Replace Existing Media File' : 'Upload to cPanel Storage'}
-        </h3>
+      <div className="w-full bg-white rounded-xl border border-[#E5E7E5] p-6 space-y-5 shadow-xs">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#E5E7E5] pb-4">
+          <div>
+            <h3 className="font-extrabold text-base text-[#000000] flex items-center gap-2">
+              <Upload className="w-5 h-5 text-[#E6A500]" />
+              {replaceId ? 'Replace Existing Media / Gallery Item' : 'Upload Photos & Media to Website Gallery'}
+            </h3>
+            <p className="text-xs text-[#555B57] mt-1">
+              Upload field photographs, stories, and media. Public photos automatically appear on the website{' '}
+              <a
+                href="http://localhost:3000/resources/gallery"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[#E6A500] font-bold hover:underline inline-flex items-center gap-0.5"
+              >
+                Our Gallery (/resources/gallery) ↗
+              </a>{' '}
+              with your title and caption.
+            </p>
+          </div>
+          <a
+            href="http://localhost:3000/resources/gallery"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-3.5 py-2 rounded-lg border border-[#E5E7E5] bg-[#F4F5F4]/70 hover:bg-[#F4F5F4] text-xs font-bold text-black flex items-center gap-1.5 transition shadow-2xs"
+          >
+            <ExternalLink className="w-3.5 h-3.5 text-[#E6A500]" /> View Live Gallery Page ↗
+          </a>
+        </div>
+
         {replaceId && (
-          <div className="p-2.5 rounded-lg bg-amber-50 border border-amber-200 text-xs flex items-center justify-between">
-            <span>Replacing media ID: {replaceId.slice(0, 8)}...</span>
-            <button onClick={() => setReplaceId(null)} className="font-bold underline">
-              Cancel
+          <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 text-xs flex items-center justify-between">
+            <span className="font-semibold text-amber-900">
+              Replacing existing media asset ID: <code className="font-mono">{replaceId.slice(0, 8)}...</code>
+            </span>
+            <button
+              onClick={() => {
+                setReplaceId(null);
+                handleRemoveSelectedFile();
+                setTitle('');
+                setCaption('');
+                setAltText('');
+              }}
+              className="font-bold underline text-amber-900 hover:text-black cursor-pointer"
+            >
+              Cancel Replacement
             </button>
           </div>
         )}
-        <div>
-          <label className="block text-xs font-semibold mb-1">Select File</label>
+
+        {/* File Dropzone / Selected Preview */}
+        <div className="space-y-2">
+          <label className="block text-xs font-bold text-[#000000]">
+            Photo / Media File *
+          </label>
           <input
+            ref={fileInputRef}
             type="file"
-            onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
-            className="w-full text-xs border border-[#E5E7E5] rounded-lg p-2"
+            onChange={handleFileChange}
+            accept="image/png,image/jpeg,image/webp,image/gif,video/mp4,application/pdf"
+            className="hidden"
+          />
+
+          {selectedFile ? (
+            <div className="p-4 rounded-xl border border-[#E5E7E5] bg-[#F4F5F4]/50 flex flex-wrap items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="w-24 h-20 rounded-lg border border-[#E5E7E5] bg-white p-1 flex items-center justify-center shrink-0 overflow-hidden">
+                  {filePreview ? (
+                    <img
+                      src={filePreview}
+                      alt="Upload preview"
+                      className="max-h-full max-w-full object-cover rounded"
+                    />
+                  ) : (
+                    <FileText className="w-8 h-8 text-[#555B57]" />
+                  )}
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-black flex items-center gap-1.5">
+                    <Check className="w-4 h-4 text-emerald-600" />
+                    {selectedFile.name}
+                  </div>
+                  <div className="text-[11px] text-[#555B57] mt-0.5 font-mono">
+                    {(selectedFile.size / 1024).toFixed(1)} KB · {selectedFile.type || 'Media file'}
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="px-3 py-1.5 rounded-lg border border-[#E5E7E5] bg-white text-xs font-bold hover:bg-neutral-50 text-black cursor-pointer flex items-center gap-1.5"
+                >
+                  <Upload className="w-3.5 h-3.5 text-[#E6A500]" /> Change File
+                </button>
+                <button
+                  type="button"
+                  onClick={handleRemoveSelectedFile}
+                  className="px-3 py-1.5 rounded-lg border border-red-200 bg-red-50 text-red-700 text-xs font-bold hover:bg-red-100 cursor-pointer flex items-center gap-1.5"
+                >
+                  <X className="w-3.5 h-3.5" /> Remove
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div
+              onClick={() => fileInputRef.current?.click()}
+              className="border-2 border-dashed border-[#E5E7E5] hover:border-[#E6A500] rounded-xl p-6 text-center cursor-pointer transition bg-[#F4F5F4]/40 hover:bg-[#F4F5F4]"
+            >
+              <Upload className="w-8 h-8 text-[#E6A500] mx-auto mb-2" />
+              <div className="text-sm font-bold text-black">
+                Click to Choose or Drag & Drop Photo / Media File
+              </div>
+              <p className="text-xs text-[#555B57] mt-1">
+                Accepts JPEG, PNG, WebP, GIF, MP4, PDF · Photos automatically display in the public Website Gallery
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Title */}
+        <div>
+          <label className="block text-xs font-bold text-[#000000] mb-1">
+            Photo / Media Title *
+          </label>
+          <input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="e.g. Field Outreach & Creative Arts Session"
+            className="w-full px-3.5 py-2.5 rounded-lg border border-[#E5E7E5] text-sm text-black font-semibold focus:outline-none focus:border-[#E6A500]"
           />
           <p className="text-[11px] text-[#555B57] mt-1">
-            Magic-byte signature validated server-side (JPEG, PNG, WebP, GIF, PDF, DOCX, XLSX, MP4).
+            Displayed as the main title of this photo in the website gallery and lightbox.
           </p>
         </div>
 
+        {/* Caption & Story Text */}
+        <div>
+          <label className="block text-xs font-bold text-[#000000] mb-1">
+            Gallery Caption & Story Description (Displayed in Lightbox)
+          </label>
+          <textarea
+            rows={3}
+            value={caption}
+            onChange={(e) => setCaption(e.target.value)}
+            placeholder="Enter the background story, context, or description of this photograph for the website gallery lightbox..."
+            className="w-full px-3.5 py-2.5 rounded-lg border border-[#E5E7E5] text-sm text-black focus:outline-none focus:border-[#E6A500]"
+          />
+          <p className="text-[11px] text-[#555B57] mt-1">
+            Visitors will see this description when they click on the photo in the website gallery.
+          </p>
+        </div>
+
+        {/* Category & Visibility Row */}
         {!replaceId && (
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold mb-1">Category</label>
+              <label className="block text-xs font-bold text-[#000000] mb-1">Category / Section</label>
               <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value as MediaCategory)}
-                className="w-full px-3 py-2 rounded-lg border border-[#E5E7E5] text-xs"
+                className="w-full px-3.5 py-2.5 rounded-lg border border-[#E5E7E5] text-xs font-semibold bg-white"
               >
                 {MEDIA_CATEGORIES.map((c) => (
                   <option key={c} value={c}>
-                    {c}
+                    {c === 'resources' ? 'resources (Website Gallery)' : c}
                   </option>
                 ))}
               </select>
+              <p className="text-[11px] text-[#555B57] mt-1">
+                Category classification for filtering and reports.
+              </p>
             </div>
             <div>
-              <label className="block text-xs font-semibold mb-1">Visibility</label>
+              <label className="block text-xs font-bold text-[#000000] mb-1">Website Visibility</label>
               <select
                 value={visibility}
                 onChange={(e) => setVisibility(e.target.value as 'public' | 'private')}
-                className="w-full px-3 py-2 rounded-lg border border-[#E5E7E5] text-xs"
+                className="w-full px-3.5 py-2.5 rounded-lg border border-[#E5E7E5] text-xs font-semibold bg-white"
               >
-                <option value="public">Public (/media/public)</option>
-                <option value="private">Private (Auth Only)</option>
+                <option value="public">Public (Visible in Website Gallery & All Pages)</option>
+                <option value="private">Private (Restricted / Internal Auth Only)</option>
               </select>
+              <p className="text-[11px] text-[#555B57] mt-1">
+                Must be "Public" to appear on the public website and gallery.
+              </p>
             </div>
           </div>
         )}
 
+        {/* Accessibility Alt Text */}
         <div>
-          <label className="block text-xs font-semibold mb-1">Title</label>
-          <input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Descriptive media title"
-            className="w-full px-3 py-2 rounded-lg border border-[#E5E7E5] text-sm"
-          />
-        </div>
-        <div>
-          <label className="block text-xs font-semibold mb-1">
-            Accessibility Alt Text (WCAG 2.1 AA)
+          <label className="block text-xs font-bold text-[#000000] mb-1">
+            Accessibility Alt Text (Optional, defaults to Title)
           </label>
           <input
             value={altText}
             onChange={(e) => setAltText(e.target.value)}
-            placeholder="Describe image for screen readers"
-            className="w-full px-3 py-2 rounded-lg border border-[#E5E7E5] text-sm"
-          />
-        </div>
-        <div>
-          <label className="block text-xs font-semibold mb-1">Caption</label>
-          <input
-            value={caption}
-            onChange={(e) => setCaption(e.target.value)}
-            className="w-full px-3 py-2 rounded-lg border border-[#E5E7E5] text-sm"
+            placeholder="Brief description for screen readers and SEO"
+            className="w-full px-3.5 py-2 rounded-lg border border-[#E5E7E5] text-xs text-black focus:outline-none focus:border-[#E6A500]"
           />
         </div>
 
         <button
           disabled={uploading}
           onClick={handleUpload}
-          className="w-full py-2.5 rounded-lg bg-[#E6A500] text-white text-xs font-semibold flex items-center justify-center gap-2 hover:bg-[#cc9200] disabled:opacity-50"
+          className="w-full py-3 rounded-lg bg-[#E6A500] hover:bg-[#d49700] text-black text-sm font-extrabold flex items-center justify-center gap-2 transition cursor-pointer shadow-xs disabled:opacity-50"
         >
-          <Upload className="w-4 h-4" />
-          {uploading ? 'Validating & Uploading...' : replaceId ? 'Replace File' : 'Upload File'}
+          {uploading ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span>Uploading & Publishing to Gallery...</span>
+            </>
+          ) : (
+            <>
+              <Upload className="w-4 h-4" />
+              <span>{replaceId ? 'Replace Media File' : 'Upload & Publish to Website Gallery'}</span>
+            </>
+          )}
         </button>
       </div>
 
       {/* Row 2: Media Asset Browser & Search (Full Width) */}
       <div className="w-full bg-white rounded-xl border border-[#E5E7E5] p-6 space-y-4 shadow-xs">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="relative flex-1 min-w-[200px]">
-            <Search className="w-4 h-4 text-[#555B57] absolute left-3 top-2.5" />
-            <input
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search media by title, filename, or alt text..."
-              className="w-full pl-9 pr-3 py-2 rounded-lg border border-[#E5E7E5] text-xs"
-            />
+          <div className="flex items-center gap-2">
+            <h4 className="font-extrabold text-sm text-[#000000]">
+              Media & Gallery Archive ({filtered.length})
+            </h4>
+            <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 border border-amber-200 text-amber-900">
+              {publicImagesCount} Live Gallery Photos
+            </span>
           </div>
-          <select
-            value={filterCat}
-            onChange={(e) => setFilterCat(e.target.value)}
-            className="px-3 py-2 rounded-lg border border-[#E5E7E5] text-xs"
-          >
-            <option value="all">All Categories ({media.length})</option>
-            {MEDIA_CATEGORIES.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative min-w-[200px]">
+              <Search className="w-4 h-4 text-[#555B57] absolute left-3 top-2.5" />
+              <input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search media by title, filename, or alt text..."
+                className="w-full pl-9 pr-3 py-1.5 rounded-lg border border-[#E5E7E5] text-xs"
+              />
+            </div>
+            <select
+              value={filterCat}
+              onChange={(e) => setFilterCat(e.target.value)}
+              className="px-3 py-1.5 rounded-lg border border-[#E5E7E5] text-xs font-semibold bg-white"
+            >
+              <option value="all">All Categories ({media.length})</option>
+              {MEDIA_CATEGORIES.map((c) => (
+                <option key={c} value={c}>
+                  {c === 'resources' ? 'resources (Gallery)' : c}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 max-h-[640px] overflow-y-auto pr-1">
@@ -301,70 +476,101 @@ export function MediaLibraryModule({
             const isImg = item.mime_type?.startsWith('image/');
             const imgUrl =
               item.visibility === 'public' ? `/media/${item.storage_key}` : undefined;
+            const itemTitle = item.title_en || item.title || item.original_filename;
+            const itemCaption = item.caption_en || item.caption;
             return (
               <div
                 key={item.id}
-                className="rounded-xl border border-[#E5E7E5] overflow-hidden bg-[#FFFFFF]/40 flex flex-col justify-between"
+                className="rounded-xl border border-[#E5E7E5] overflow-hidden bg-white flex flex-col justify-between hover:border-[#E6A500]/60 transition shadow-2xs"
               >
                 <div>
-                  <div className="h-36 bg-[#E6A500]/10 flex items-center justify-center overflow-hidden relative">
+                  <div className="h-40 bg-[#F4F5F4] flex items-center justify-center overflow-hidden relative">
                     {isImg && imgUrl ? (
                       <img
                         src={imgUrl}
-                        alt={item.alt_text || item.title}
+                        alt={item.alt_text_en || item.alt_text || itemTitle}
                         className="w-full h-full object-cover"
                       />
                     ) : (
                       <FileText className="w-10 h-10 text-[#555B57]" />
                     )}
-                    <span className="absolute top-2 right-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-[#E6A500] text-black flex items-center gap-1">
-                      {item.visibility === 'private' ? (
-                        <Lock className="w-2.5 h-2.5" />
-                      ) : (
-                        <Globe className="w-2.5 h-2.5" />
+                    <div className="absolute top-2 right-2 flex items-center gap-1">
+                      {isImg && item.visibility === 'public' && (
+                        <span className="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase bg-emerald-600 text-white shadow-2xs">
+                          In Gallery
+                        </span>
                       )}
-                      {item.category}
-                    </span>
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-[#E6A500] text-black flex items-center gap-1 shadow-2xs">
+                        {item.visibility === 'private' ? (
+                          <Lock className="w-2.5 h-2.5" />
+                        ) : (
+                          <Globe className="w-2.5 h-2.5" />
+                        )}
+                        {item.category}
+                      </span>
+                    </div>
                   </div>
-                  <div className="p-3">
-                    <div className="font-semibold text-xs text-[#000000] truncate">
-                      {item.title || item.original_filename}
+                  <div className="p-3.5 space-y-1">
+                    <div className="font-bold text-xs text-[#000000] line-clamp-1" title={itemTitle}>
+                      {itemTitle}
                     </div>
-                    <div className="text-[11px] text-[#555B57] truncate mt-0.5">
-                      Alt: {item.alt_text || 'None'}
-                    </div>
-                    <div className="text-[10px] text-[#555B57] mt-1 font-mono">
-                      {(Number(item.file_size || 0) / 1024).toFixed(1)} KB · {item.file_extension}
+                    {itemCaption ? (
+                      <div className="text-[11px] text-[#555B57] line-clamp-2" title={itemCaption}>
+                        {itemCaption}
+                      </div>
+                    ) : (
+                      <div className="text-[11px] text-[#555B57] line-clamp-1">
+                        Alt: {item.alt_text_en || item.alt_text || 'None'}
+                      </div>
+                    )}
+                    <div className="text-[10px] text-[#555B57] font-mono pt-1">
+                      {(Number(item.file_size_bytes || item.file_size || 0) / 1024).toFixed(1)} KB · {item.file_extension}
                     </div>
                   </div>
                 </div>
-                <div className="px-3 pb-3 pt-1 flex items-center justify-between border-t border-[#E5E7E5] text-[11px]">
-                  <button
-                    onClick={() => {
-                      setReplaceId(item.id);
-                      setTitle(item.title || '');
-                      setAltText(item.alt_text || '');
-                    }}
-                    className="text-[#E6A500] font-semibold flex items-center gap-1 hover:underline"
-                  >
-                    <RefreshCw className="w-3 h-3" /> Replace
-                  </button>
-                  {item.visibility === 'private' && (
+                <div className="px-3.5 pb-3 pt-2 flex items-center justify-between border-t border-[#F4F5F4] text-xs">
+                  <div className="flex items-center gap-2.5">
                     <button
-                      onClick={() =>
-                        handleDownloadPrivate(item.id, item.original_filename || 'document.pdf')
-                      }
-                      className="text-[#000000] font-semibold flex items-center gap-1 hover:underline"
+                      onClick={() => {
+                        setReplaceId(item.id);
+                        setTitle(item.title_en || item.title || '');
+                        setAltText(item.alt_text_en || item.alt_text || '');
+                        setCaption(item.caption_en || item.caption || '');
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                      className="text-[#E6A500] font-bold flex items-center gap-1 hover:underline cursor-pointer"
                     >
-                      <Download className="w-3 h-3" /> Download
+                      <RefreshCw className="w-3 h-3" /> Replace
                     </button>
-                  )}
-                  <button
-                    onClick={() => handleDelete(item.id)}
-                    className="text-red-600 font-semibold flex items-center gap-1 hover:underline"
-                  >
-                    <Trash2 className="w-3 h-3" /> Delete
-                  </button>
+                    {isImg && item.visibility === 'public' && imgUrl && (
+                      <a
+                        href={imgUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[#555B57] hover:text-black font-semibold flex items-center gap-1 hover:underline"
+                      >
+                        <ExternalLink className="w-3 h-3" /> View
+                      </a>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {item.visibility === 'private' && (
+                      <button
+                        onClick={() =>
+                          handleDownloadPrivate(item.id, item.original_filename || 'document.pdf')
+                        }
+                        className="text-[#000000] font-semibold flex items-center gap-1 hover:underline cursor-pointer"
+                      >
+                        <Download className="w-3 h-3" /> Download
+                      </button>
+                    )}
+                    <button
+                      onClick={() => handleDelete(item.id)}
+                      className="text-red-600 font-bold flex items-center gap-1 hover:underline cursor-pointer"
+                    >
+                      <Trash2 className="w-3 h-3" /> Delete
+                    </button>
+                  </div>
                 </div>
               </div>
             );
