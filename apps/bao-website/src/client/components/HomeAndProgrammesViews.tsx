@@ -1286,7 +1286,7 @@ export function HomeView({
                 className="flex items-center gap-10 pr-10 shrink-0"
                 aria-hidden={halfKey === 'half-b' ? true : undefined}
               >
-                {baseTrack.map((item) => (
+                {baseTrack.map((item: any) => (
                   <div
                     key={`${halfKey}-${item.id}`}
                     className="w-52 h-28 shrink-0 bg-white hover:bg-[#F2F2F2] flex flex-col items-center justify-center px-5 transition"

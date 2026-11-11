@@ -95,6 +95,7 @@ export function StandardPageTemplate({
   leadTitle,
   leadDescription = '',
   charLimit = 360,
+  pageKey,
   metrics,
   siteData,
   navigate,
@@ -107,6 +108,7 @@ export function StandardPageTemplate({
   leadTitle?: string;
   leadDescription?: string;
   charLimit?: number;
+  pageKey?: string;
   metrics?: Array<{
     type: 'youth reached' | 'locations' | 'emergency respondent' | 'beneficiaries' | 'hospitals' | 'partners';
     number: number;
@@ -1990,7 +1992,7 @@ export function ProjectsView({
 /**
  * Standalone Impact Page
  */
-export function ImpactView({ lang, siteData }: { lang: LanguageCode; siteData: any }) {
+export function ImpactView({ lang, siteData, navigate }: { lang: LanguageCode; siteData: any; navigate?: (path: string) => void }) {
   const dict = UI_TRANSLATIONS[lang];
   const indicators = siteData.indicators || [];
   const cmsPage = (siteData.pages || []).find((p: any) => p.page_key === 'impact' && p.status !== 'archived');
@@ -2580,7 +2582,7 @@ export function NewsAndEventsView({
               />
             ) : (
               <div className="space-y-5 text-lg text-black/90 leading-relaxed font-normal">
-                {activeItem.paragraphs?.map((para, pIdx) => (
+                {activeItem.paragraphs?.map((para: string, pIdx: number) => (
                   <p key={pIdx} className="leading-relaxed">
                     {para}
                   </p>
@@ -3363,7 +3365,7 @@ export function ResourcesView({
 /**
  * Standalone Get Involved Page
  */
-export function GetInvolvedView({ lang, siteData }: { lang: LanguageCode; siteData: any }) {
+export function GetInvolvedView({ lang, siteData, navigate }: { lang: LanguageCode; siteData: any; navigate?: (path: string) => void }) {
   const dict = UI_TRANSLATIONS[lang];
   const partners = siteData.partners || [];
   const media = siteData.media || [];

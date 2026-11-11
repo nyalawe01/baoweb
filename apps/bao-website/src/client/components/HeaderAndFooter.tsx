@@ -680,7 +680,7 @@ export function Footer({
             <h4 className="font-bold text-sm text-black uppercase tracking-wider mb-3">
               Useful Links
             </h4>
-            {usefulLinks.map((l) => (
+            {usefulLinks.map((l: any) => (
               l.isExternal ? (
                 <a
                   key={l.href}
