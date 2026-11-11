@@ -230,9 +230,10 @@ export function createCmsApp() {
     res.json({ staff: req.staff });
   });
 
-  app.get('/api/v1/config', (_req: Request, res: Response) => {
+  app.get('/api/v1/config', (req: Request, res: Response) => {
+    const origin = req.get('host') ? `${req.protocol}://${req.get('host')}` : 'http://localhost:3000';
     res.json({
-      websiteUrl: process.env.WEBSITE_URL || 'http://localhost:3000',
+      websiteUrl: process.env.WEBSITE_URL || origin,
     });
   });
 
