@@ -7,7 +7,6 @@ import {
   Save,
   Check,
   X,
-  Star,
   Eye,
   EyeOff,
   Search,
@@ -28,7 +27,7 @@ import { type SweetAlertOptions } from './SweetAlertModal.js';
 export interface TestimonialItem {
   id: string;
   name: string;
-  role: string;
+  role?: string;
   role_sw?: string;
   quote: string;
   quote_sw?: string;
@@ -163,8 +162,6 @@ export function TestimoniesModule({
 
   // Testimony Form Fields
   const [formName, setFormName] = useState('');
-  const [formRoleEn, setFormRoleEn] = useState('');
-  const [formRoleSw, setFormRoleSw] = useState('');
   const [formQuoteEn, setFormQuoteEn] = useState('');
   const [formQuoteSw, setFormQuoteSw] = useState('');
   const [formAvatar, setFormAvatar] = useState('');
@@ -172,7 +169,6 @@ export function TestimoniesModule({
   const [formCategory, setFormCategory] = useState('Youth Graduate');
   const [isManualCategory, setIsManualCategory] = useState(false);
   const [manualCategoryText, setManualCategoryText] = useState('');
-  const [formRating, setFormRating] = useState<number>(5);
   const [formIsPublished, setFormIsPublished] = useState(true);
 
   // Sync state if setting changes
@@ -254,16 +250,13 @@ export function TestimoniesModule({
   const handleOpenAddForm = () => {
     setEditingId(null);
     setFormName('');
-    setFormRoleEn('');
-    setFormRoleSw('');
     setFormQuoteEn('');
     setFormQuoteSw('');
     setFormAvatar('');
-    setFormDateLabel('Community Member');
+    setFormDateLabel('');
     setFormCategory('Youth Graduate');
     setIsManualCategory(false);
     setManualCategoryText('');
-    setFormRating(5);
     setFormIsPublished(true);
     setIsFormOpen(true);
   };
@@ -272,13 +265,11 @@ export function TestimoniesModule({
   const handleOpenEditForm = (item: TestimonialItem) => {
     setEditingId(item.id);
     setFormName(item.name || '');
-    setFormRoleEn(item.role || '');
-    setFormRoleSw(item.role_sw || '');
     setFormQuoteEn(item.quote || '');
     setFormQuoteSw(item.quote_sw || '');
     setFormAvatar(item.avatar_url || '');
     setFormDateLabel(item.date_label || '');
-    const itemCat = item.category?.trim() || 'Youth Graduate';
+    const itemCat = item.category?.trim() || item.role?.trim() || 'Youth Graduate';
     if (DEFAULT_PRESET_CATEGORIES.includes(itemCat)) {
       setFormCategory(itemCat);
       setIsManualCategory(false);
@@ -288,7 +279,6 @@ export function TestimoniesModule({
       setIsManualCategory(true);
       setManualCategoryText(itemCat);
     }
-    setFormRating(item.rating ?? 5);
     setFormIsPublished(item.is_published !== false);
     setIsFormOpen(true);
   };
@@ -313,14 +303,11 @@ export function TestimoniesModule({
           return {
             ...item,
             name: formName.trim(),
-            role: formRoleEn.trim() || 'Beneficiary Participant',
-            role_sw: formRoleSw.trim() || formRoleEn.trim(),
+            category: effectiveCategory,
             quote: formQuoteEn.trim(),
             quote_sw: formQuoteSw.trim() || formQuoteEn.trim(),
             avatar_url: formAvatar.trim() || null,
             date_label: formDateLabel.trim(),
-            category: effectiveCategory,
-            rating: formRating,
             is_published: formIsPublished,
           };
         }
@@ -331,14 +318,11 @@ export function TestimoniesModule({
       const newItem: TestimonialItem = {
         id: `t-${Date.now()}`,
         name: formName.trim(),
-        role: formRoleEn.trim() || 'Beneficiary Participant',
-        role_sw: formRoleSw.trim() || formRoleEn.trim(),
+        category: effectiveCategory,
         quote: formQuoteEn.trim(),
         quote_sw: formQuoteSw.trim() || formQuoteEn.trim(),
         avatar_url: formAvatar.trim() || null,
         date_label: formDateLabel.trim(),
-        category: effectiveCategory,
-        rating: formRating,
         is_published: formIsPublished,
       };
       nextItems = [newItem, ...currentItems];
@@ -543,9 +527,11 @@ export function TestimoniesModule({
                       )}
                       <div>
                         <h4 className="font-bold text-gray-900 text-sm">{item.name}</h4>
-                        <p className="text-xs text-[#d49700] font-semibold line-clamp-1">
-                          {item.role || 'Participant'}
-                        </p>
+                        {item.category && (
+                          <p className="text-xs text-[#d49700] font-semibold line-clamp-1">
+                            {item.category}
+                          </p>
+                        )}
                         {item.date_label && (
                           <span className="text-[11px] text-gray-400 block">{item.date_label}</span>
                         )}
@@ -562,19 +548,7 @@ export function TestimoniesModule({
                       >
                         {item.is_published !== false ? 'Live' : 'Hidden'}
                       </span>
-                      {item.category && (
-                        <span className="text-[10px] font-medium px-2 py-0.5 bg-gray-100 text-gray-600 rounded">
-                          {item.category}
-                        </span>
-                      )}
                     </div>
-                  </div>
-
-                  {/* Rating Stars */}
-                  <div className="flex items-center gap-0.5 mb-2.5">
-                    {Array.from({ length: item.rating ?? 5 }).map((_, sIdx) => (
-                      <Star key={sIdx} className="w-3.5 h-3.5 fill-[#E6A500] text-[#E6A500]" />
-                    ))}
                   </div>
 
                   {/* Quote English */}
@@ -760,76 +734,18 @@ export function TestimoniesModule({
                 </div>
               </div>
 
-              {/* Row 2: Roles EN & SW */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
-                    Role / Context (English)
-                  </label>
-                  <input
-                    type="text"
-                    value={formRoleEn}
-                    onChange={(e) => setFormRoleEn(e.target.value)}
-                    placeholder="e.g. MEMKWA Catch-up Learning Graduate"
-                    className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:outline-none focus:border-black"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
-                    Role / Context (Swahili)
-                  </label>
-                  <input
-                    type="text"
-                    value={formRoleSw}
-                    onChange={(e) => setFormRoleSw(e.target.value)}
-                    placeholder="e.g. Mhitimu wa MEMKWA na Mjasiriamali"
-                    className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:outline-none focus:border-black"
-                  />
-                </div>
-              </div>
-
-              {/* Row 3: Date Label and Rating */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
-                    Date / Cohort / Center Tag
-                  </label>
-                  <input
-                    type="text"
-                    value={formDateLabel}
-                    onChange={(e) => setFormDateLabel(e.target.value)}
-                    placeholder="e.g. Class of 2023, Kigogo Center, October 2024"
-                    className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:outline-none focus:border-black"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
-                    Rating (Stars: 1 - 5)
-                  </label>
-                  <div className="flex items-center gap-2 pt-1">
-                    {[1, 2, 3, 4, 5].map((starVal) => (
-                      <button
-                        key={starVal}
-                        type="button"
-                        onClick={() => setFormRating(starVal)}
-                        className="p-1 cursor-pointer"
-                      >
-                        <Star
-                          className={`w-5 h-5 ${
-                            starVal <= formRating
-                              ? 'fill-[#E6A500] text-[#E6A500]'
-                              : 'text-gray-300'
-                          }`}
-                        />
-                      </button>
-                    ))}
-                    <span className="text-xs text-gray-500 font-medium ml-2">
-                      {formRating} of 5 stars
-                    </span>
-                  </div>
-                </div>
+              {/* Row 2: Date / Cohort / Center Tag */}
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
+                  Date / Cohort / Center Tag (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={formDateLabel}
+                  onChange={(e) => setFormDateLabel(e.target.value)}
+                  placeholder="e.g. Class of 2023, Kigogo Center, October 2024"
+                  className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:outline-none focus:border-black"
+                />
               </div>
 
               {/* Avatar URL or Media Picker */}

@@ -19,7 +19,6 @@ import {
   FolderKanban,
   Newspaper,
   Image as ImageIcon,
-  Star,
   Quote,
   MessageSquareQuote,
 } from 'lucide-react';
@@ -1121,26 +1120,22 @@ export function HomeView({
             ? rawItems.map((item: any) => ({
                 id: item.id,
                 name: item.name,
-                role: lang === 'sw' ? item.role_sw || item.role : item.role,
+                category: item.category || 'Community Voice',
                 quote: lang === 'sw' ? item.quote_sw || item.quote : item.quote,
                 avatar: item.avatar_url
                   ? resolveMediaUrl(item.avatar_url, media) || item.avatar_url
                   : null,
                 date: item.date_label || '',
-                category: item.category || 'Community Voice',
-                rating: item.rating ?? 5,
               }))
             : (rawItems.length > 0 ? rawItems.map((item: any) => ({
                 id: item.id,
                 name: item.name,
-                role: lang === 'sw' ? item.role_sw || item.role : item.role,
+                category: item.category || 'Community Voice',
                 quote: lang === 'sw' ? item.quote_sw || item.quote : item.quote,
                 avatar: item.avatar_url
                   ? resolveMediaUrl(item.avatar_url, media) || item.avatar_url
                   : null,
                 date: item.date_label || '',
-                category: item.category || 'Community Voice',
-                rating: item.rating ?? 5,
               })) : fallbackTestimonials);
 
           if (displayedTestimonials.length === 0) return null;
@@ -1169,7 +1164,7 @@ export function HomeView({
                     className="p-6 h-full bg-white border border-gray-200 rounded-2xl shadow-none hover:border-black transition duration-200 flex flex-col justify-between"
                   >
                     <div>
-                      {/* Top Author and Rating */}
+                      {/* Top Author and Category */}
                       <div className="flex items-start justify-between gap-3 mb-4">
                         <div className="flex items-center gap-3">
                           {c.avatar ? (
@@ -1187,18 +1182,12 @@ export function HomeView({
                             <h3 className="text-base font-bold text-black leading-snug">
                               {c.name}
                             </h3>
-                            {c.role && (
+                            {c.category && (
                               <p className="text-xs text-[#d49700] font-bold uppercase tracking-wide line-clamp-1">
-                                {c.role}
+                                {c.category}
                               </p>
                             )}
                           </div>
-                        </div>
-
-                        <div className="flex items-center gap-0.5 pt-1">
-                          {Array.from({ length: c.rating ?? 5 }).map((_, sIdx) => (
-                            <Star key={sIdx} className="w-3.5 h-3.5 fill-[#E6A500] text-[#E6A500]" />
-                          ))}
                         </div>
                       </div>
 
@@ -1211,11 +1200,12 @@ export function HomeView({
                       </div>
                     </div>
 
-                    {/* Bottom Date and Verified Tag */}
-                    <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-                      <span className="font-semibold text-slate-600">{c.date || c.category}</span>
-                      
-                    </div>
+                    {/* Bottom Date and Tag */}
+                    {c.date && (
+                      <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                        <span className="font-semibold text-slate-600">{c.date}</span>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
