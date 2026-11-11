@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "main": "dist/server.js",
+  "main": "server.ts",
   "scripts": {
     "dev": "tsx watch server.ts",
     "build": "vite build && tsc -p tsconfig.server.json",

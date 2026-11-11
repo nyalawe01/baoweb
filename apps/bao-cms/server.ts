@@ -848,7 +848,16 @@ export function createCmsApp() {
   // ---------------------------------------------------------------------------
   // 7. SERVE COMPILED REACT CMS SPA IN PRODUCTION
   // ---------------------------------------------------------------------------
-  const clientDistPath = path.resolve(process.cwd(), 'dist/client');
+  const candidateClientDists = [
+    path.resolve(process.cwd(), 'dist/client'),
+    path.resolve(process.cwd(), 'apps/bao-cms/dist/client'),
+    path.resolve(__dirname, 'dist/client'),
+    path.resolve(__dirname, '../dist/client'),
+  ];
+  const clientDistPath =
+    candidateClientDists.find((d) => existsSync(path.join(d, 'index.html'))) ||
+    candidateClientDists[0];
+
   if (existsSync(clientDistPath)) {
     app.use(express.static(clientDistPath));
     app.get('*', (req: Request, res: Response, next: NextFunction) => {
@@ -870,7 +879,7 @@ const isDirectRun =
 export const app = createCmsApp();
 export default app;
 
-if (isDirectRun) {
+if (isDirectRun && !process.env.VERCEL) {
   const port = Number(process.env.CMS_PORT || 3001);
   app.listen(port, () => {
     console.log(`[BAO-CMS] Administrative Server listening on http://localhost:${port}`);

@@ -4,7 +4,7 @@
     "bao-website": {
       "root": "apps/bao-website",
       "framework": "express",
-      "entrypoint": "dist/server.js",
+      "entrypoint": "server.ts",
       "buildCommand": "npm --workspace=@bao/shared run build && npm run build",
       "bindings": [
         {
@@ -18,7 +18,7 @@
     "bao-cms": {
       "root": "apps/bao-cms",
       "framework": "express",
-      "entrypoint": "dist/server.js",
+      "entrypoint": "server.ts",
       "buildCommand": "npm --workspace=@bao/shared run build && npm run build",
       "bindings": [
         {

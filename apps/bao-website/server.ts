@@ -470,7 +470,16 @@ async function startServer() {
       }
     });
   } else {
-    const clientDist = path.resolve(process.cwd(), 'dist/client');
+    const candidateClientDists = [
+      path.resolve(process.cwd(), 'dist/client'),
+      path.resolve(process.cwd(), 'apps/bao-website/dist/client'),
+      path.resolve(__dirname, 'dist/client'),
+      path.resolve(__dirname, '../dist/client'),
+    ];
+    const clientDist =
+      candidateClientDists.find((d) => fs.existsSync(path.join(d, 'index.html'))) ||
+      candidateClientDists[0];
+
     app.use(express.static(clientDist, { index: false }));
     app.get('*', (req: Request, res: Response) => {
       const indexFile = path.join(clientDist, 'index.html');
@@ -488,7 +497,7 @@ async function startServer() {
     });
   }
 
-  if (process.env.VITEST !== 'true') {
+  if (process.env.VITEST !== 'true' && !process.env.VERCEL) {
     app.listen(port, () => {
       console.log(`[bao-website] Server listening on http://localhost:${port}`);
     });
