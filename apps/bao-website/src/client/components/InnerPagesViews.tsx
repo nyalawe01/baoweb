@@ -28,6 +28,7 @@ import {
   Ambulance,
   HeartPulse,
   ExternalLink,
+  Globe,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -3609,10 +3610,58 @@ export function GetInvolvedView({ lang, siteData }: { lang: LanguageCode; siteDa
 export function ContactView({ lang, siteData, navigate }: { lang: LanguageCode; siteData: any; navigate?: (path: string) => void }) {
   const dict = UI_TRANSLATIONS[lang];
   const contact = siteData.settings?.contact_details || {};
+  const contactSettings = siteData.settings?.contact_page_settings || {};
+  const orgProfile = siteData.settings?.organization_profile || {};
+
+  // Derive multiple items lists from settings
+  const phonesList: Array<{ title?: string; number: string }> =
+    Array.isArray(contactSettings.phones_list) && contactSettings.phones_list.length > 0
+      ? contactSettings.phones_list
+      : Array.isArray(contact.phones_list) && contact.phones_list.length > 0
+      ? contact.phones_list
+      : (contact.phones || ['+255 651 136502', '+255 651 136504']).map((p: string, i: number) => ({
+          title: i === 0 ? 'Main Office' : 'Direct Helpline',
+          number: p,
+        }));
+
+  const emailsList: Array<{ title?: string; email: string }> =
+    Array.isArray(contactSettings.emails_list) && contactSettings.emails_list.length > 0
+      ? contactSettings.emails_list
+      : Array.isArray(contact.emails_list) && contact.emails_list.length > 0
+      ? contact.emails_list
+      : [
+          {
+            title: 'General Inquiries',
+            email: contact.primary_email || contact.email_primary || orgProfile.primary_email || 'info@babawatoto.or.tz',
+          },
+        ];
+
+  const addressesList: Array<{ title?: string; address: string }> =
+    Array.isArray(contactSettings.addresses_list) && contactSettings.addresses_list.length > 0
+      ? contactSettings.addresses_list
+      : Array.isArray(contact.addresses_list) && contact.addresses_list.length > 0
+      ? contact.addresses_list
+      : [];
+
+  const linksList: Array<{ title?: string; url: string }> =
+    Array.isArray(contactSettings.links_list) && contactSettings.links_list.length > 0
+      ? contactSettings.links_list
+      : Array.isArray(contactSettings.links) && contactSettings.links.length > 0
+      ? contactSettings.links
+      : Array.isArray(contact.links) && contact.links.length > 0
+      ? contact.links
+      : [];
+
+  const heroBadge = contactSettings.hero_badge || 'Headquarters & Community Inquiries';
+  const heroTitle = contactSettings.hero_title || 'Contact Babawatoto';
+  const heroImage = contactSettings.hero_image || contactSettings.hero_banner_image || '/media/public/images/organization/hero1.webp';
+  const leadDesc = contactSettings.lead_description || 'We welcome inquiries from partners, donors, researchers, volunteers, and community members. Reach out to our central secretariat in Dar es Salaam.';
+
   const cmsPage = (siteData.pages || []).find((p: any) => p.page_key === 'contact' && p.status !== 'archived');
   const tr = (cmsPage?.page_translations || []).find((t: any) => t.language === lang) || (cmsPage?.page_translations || [])[0] || {};
-  const pageTitle = tr.title || 'Contact Babawatoto';
-  const pageBadge = tr.hero_tag || 'Headquarters & Community Inquiries';
+  const pageTitle = tr.title || heroTitle;
+  const pageBadge = tr.hero_tag || heroBadge;
+
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -3652,7 +3701,7 @@ export function ContactView({ lang, siteData, navigate }: { lang: LanguageCode; 
       <section className="relative w-full bg-[#E6A500] text-black overflow-hidden">
         <div
           className="absolute inset-0 opacity-25 bg-cover bg-center"
-          style={{ backgroundImage: `url('/media/public/images/organization/hero1.webp')` }}
+          style={{ backgroundImage: `url('${heroImage}')` }}
         />
         <div className="absolute inset-0 bg-gradient-to-r from-[#E6A500] via-[#E6A500]/90 to-white/25" />
         <div className="relative max-w-7xl mx-auto px-4 py-16 lg:py-24 grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
@@ -3664,13 +3713,13 @@ export function ContactView({ lang, siteData, navigate }: { lang: LanguageCode; 
               {pageTitle}
             </h1>
             <p className="text-base sm:text-lg text-black max-w-2xl leading-relaxed font-medium">
-              We welcome inquiries from partners, donors, researchers, volunteers, and community members. Reach out to our central secretariat in Dar es Salaam.
+              {leadDesc}
             </p>
           </div>
           <div className="lg:col-span-5 flex justify-center lg:justify-end">
             <div className="relative w-full max-w-lg aspect-[4/3] rounded-2xl overflow-hidden shadow-none border-4 border-white bg-black/10">
               <img
-                src="/media/public/images/organization/hero1.webp"
+                src={heroImage}
                 alt={pageTitle}
                 className="w-full h-full object-cover"
               />
@@ -3683,58 +3732,136 @@ export function ContactView({ lang, siteData, navigate }: { lang: LanguageCode; 
         <div className="lg:col-span-5 space-y-6">
           <div className="bg-white border border-gray-200 shadow-none p-8 space-y-6 text-[18px]">
             <h2 className="text-[28px] font-extrabold text-black">Our Office Details</h2>
+
+            {/* Physical / Postal Addresses */}
             <div className="flex items-start gap-4">
               <MapPin className="w-6 h-6 text-[#E6A500] shrink-0 mt-1" />
-              <div className="space-y-1.5 break-normal hyphens-none">
+              <div className="space-y-2 break-normal hyphens-none w-full">
                 <div className="font-extrabold text-[20px] text-black">
-                  Physical & Postal Address
+                  Physical &amp; Postal Address
                 </div>
-                <div className="text-black mt-1 space-y-1 text-base font-medium leading-relaxed">
-                  <p className="font-bold text-black text-sm uppercase tracking-wide">
-                    Babawatoto Centre Head Office
-                  </p>
-                  <p className="leading-snug">
-                    <span className="inline-block whitespace-nowrap">St. Anne Marie Street,</span>{' '}
-                    <span className="inline-block whitespace-nowrap">House No. 27</span>
-                  </p>
-                  <p className="leading-snug">
-                    <span className="inline-block whitespace-nowrap">Morogoro Road,</span>{' '}
-                    <span className="inline-block whitespace-nowrap">Mbezi Kwa Msuguri</span>
-                  </p>
-                  <p className="leading-snug text-gray-700">
-                    <span className="inline-block whitespace-nowrap">{contact.po_box || contact.postal_address || 'P.O. Box 8293'},</span>{' '}
-                    <span className="inline-block whitespace-nowrap">{contact.city || 'Dar es Salaam'}, {contact.country || 'Tanzania'}</span>
-                  </p>
-                </div>
+                {addressesList.length > 0 ? (
+                  <div className="space-y-3 pt-1">
+                    {addressesList.map((ad, idx) => (
+                      <div key={idx} className="space-y-0.5">
+                        {ad.title && (
+                          <div className="font-bold text-black text-sm uppercase tracking-wide">
+                            {ad.title}
+                          </div>
+                        )}
+                        <p className="leading-relaxed text-black text-base font-medium">
+                          {ad.address}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-black mt-1 space-y-1 text-base font-medium leading-relaxed">
+                    <p className="font-bold text-black text-sm uppercase tracking-wide">
+                      Babawatoto Centre Head Office
+                    </p>
+                    <p className="leading-snug">
+                      <span className="inline-block whitespace-nowrap">St. Anne Marie Street,</span>{' '}
+                      <span className="inline-block whitespace-nowrap">House No. 27</span>
+                    </p>
+                    <p className="leading-snug">
+                      <span className="inline-block whitespace-nowrap">Morogoro Road,</span>{' '}
+                      <span className="inline-block whitespace-nowrap">Mbezi Kwa Msuguri</span>
+                    </p>
+                    <p className="leading-snug text-gray-700">
+                      <span className="inline-block whitespace-nowrap">{contact.po_box || contact.postal_address || 'P.O. Box 8293'},</span>{' '}
+                      <span className="inline-block whitespace-nowrap">{contact.city || 'Dar es Salaam'}, {contact.country || 'Tanzania'}</span>
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
+
+            {/* Official Emails (Multiple Support) */}
             <div className="flex items-start gap-4">
               <Mail className="w-6 h-6 text-[#E6A500] shrink-0 mt-1" />
-              <div>
+              <div className="w-full">
                 <div className="font-extrabold text-[20px] text-black">Official Email</div>
-                <div className="text-black mt-1">
-                  {contact.primary_email || contact.email_primary || 'info@babawatoto.or.tz'}
+                <div className="space-y-2 mt-1.5">
+                  {emailsList.map((em, idx) => (
+                    <div key={idx} className="flex flex-wrap items-center gap-2">
+                      {em.title && (
+                        <span className="text-xs font-bold uppercase bg-blue-50 text-blue-900 border border-blue-200 px-2 py-0.5 rounded">
+                          {em.title}:
+                        </span>
+                      )}
+                      <a
+                        href={`mailto:${em.email}`}
+                        className="text-black font-semibold hover:text-[#E6A500] transition"
+                      >
+                        {em.email}
+                      </a>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
+
+            {/* Telephones (Multiple Support) */}
             <div className="flex items-start gap-4">
               <Phone className="w-6 h-6 text-[#E6A500] shrink-0 mt-1" />
-              <div>
+              <div className="w-full">
                 <div className="font-extrabold text-[20px] text-black">Telephone</div>
-                <div className="text-black mt-1">
-                  {(contact.phones || ['+255 651 136502', '+255 651 136504']).join(' / ')}
+                <div className="space-y-2 mt-1.5">
+                  {phonesList.map((p, idx) => (
+                    <div key={idx} className="flex flex-wrap items-center gap-2">
+                      {p.title && (
+                        <span className="text-xs font-bold uppercase bg-amber-50 text-amber-900 border border-amber-200 px-2 py-0.5 rounded">
+                          {p.title}:
+                        </span>
+                      )}
+                      <a
+                        href={`tel:${p.number.replace(/\s+/g, '')}`}
+                        className="text-black font-semibold hover:text-[#E6A500] transition"
+                      >
+                        {p.number}
+                      </a>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
+
+            {/* Working Hours */}
             <div className="flex items-start gap-4">
               <Clock className="w-6 h-6 text-[#E6A500] shrink-0 mt-1" />
               <div>
                 <div className="font-extrabold text-[20px] text-black">Office Hours</div>
                 <div className="text-black mt-1">
-                  {contact.working_hours_en || 'Monday – Friday: 8:00 AM – 5:00 PM (EAT)'}
+                  {contactSettings.office_hours || contact.working_hours_en || contact.office_hours || 'Monday – Friday: 8:00 AM – 5:00 PM (EAT)'}
                 </div>
               </div>
             </div>
+
+            {/* Official Links (Multiple Support with Link Title & Link URL) */}
+            {linksList.length > 0 && (
+              <div className="flex items-start gap-4 pt-4 border-t border-gray-100">
+                <Globe className="w-6 h-6 text-[#E6A500] shrink-0 mt-1" />
+                <div className="w-full space-y-2">
+                  <div className="font-extrabold text-[20px] text-black">Official Links &amp; Resources</div>
+                  <div className="space-y-2 mt-1">
+                    {linksList.map((lnk, idx) => (
+                      <div key={idx}>
+                        <a
+                          href={lnk.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 font-bold text-black hover:text-[#E6A500] transition text-base"
+                        >
+                          <span>{lnk.title || lnk.url}</span>
+                          <ExternalLink className="w-3.5 h-3.5 text-gray-500" />
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
         <div className="lg:col-span-7 bg-white border border-gray-200 shadow-none p-8 space-y-6">

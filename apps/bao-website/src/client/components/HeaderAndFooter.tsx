@@ -53,9 +53,16 @@ export function Header({
 
   const contact = settings?.contact_details || {
     email_primary: 'info@babawatoto.or.tz',
-    phones: ['+255 (0) 784 712095'],
+    phones: ['+255 754 282 474'],
     physical_address_en: 'Mburahati Barafu, Dar es Salaam, Tanzania',
   };
+  const contactPageSettings = settings?.contact_page_settings || {};
+  const phonesList: Array<{ title?: string; number: string }> =
+    Array.isArray(contactPageSettings.phones_list) && contactPageSettings.phones_list.length > 0
+      ? contactPageSettings.phones_list
+      : Array.isArray(contact.phones_list) && contact.phones_list.length > 0
+      ? contact.phones_list
+      : (contact.phones || ['+255 651 136502', '+255 651 136504']).map((p: string) => ({ number: p }));
 
   const social = settings?.social_links || {};
   const instagramUrl = social.instagram || 'https://www.instagram.com/babawatotocentre/';
@@ -738,20 +745,25 @@ export function Footer({
             <h4 className="font-bold text-sm text-black uppercase tracking-wider mb-3">
               Get in Touch (Contact Us)
             </h4>
-            <div className="space-y-2.5 text-black font-medium">
-              <a
-                href={`tel:${(contact.phones?.[0] || '+255651136502').replace(/\s+/g, '')}`}
-                className="flex items-center gap-2.5 text-black hover:bg-[#F2F2F2] px-2 py-0.5 rounded-xs transition"
-              >
-                <Phone className="w-4 h-4 text-black shrink-0" />
-                <span>{(contact.phones || ['+255 651 136502', '+255 651 136504']).join(' / ')}</span>
-              </a>
+            <div className="space-y-2 text-black font-medium">
+              {phonesList.map((p, idx) => (
+                <a
+                  key={idx}
+                  href={`tel:${p.number.replace(/\s+/g, '')}`}
+                  className="flex items-center gap-2.5 text-black hover:bg-[#F2F2F2] px-2 py-0.5 rounded-xs transition"
+                >
+                  <Phone className="w-4 h-4 text-black shrink-0" />
+                  <span className="truncate">
+                    {p.title ? `${p.title}: ` : ''}{p.number}
+                  </span>
+                </a>
+              ))}
               <a
                 href={`mailto:${contact.primary_email || contact.email_primary || 'info@babawatoto.or.tz'}`}
                 className="flex items-center gap-2.5 text-black hover:bg-[#F2F2F2] px-2 py-0.5 rounded-xs transition"
               >
                 <Mail className="w-4 h-4 text-black shrink-0" />
-                <span>{contact.primary_email || contact.email_primary || 'info@babawatoto.or.tz'}</span>
+                <span className="truncate">{contact.primary_email || contact.email_primary || 'info@babawatoto.or.tz'}</span>
               </a>
             </div>
 

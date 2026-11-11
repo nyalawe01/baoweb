@@ -11,10 +11,15 @@ import {
   FileText,
   HeartHandshake,
   PhoneCall,
+  Phone,
   MapPin,
   Mail,
   Clock,
   Image as ImageIcon,
+  Plus,
+  Trash2,
+  Link as LinkIcon,
+  Globe,
 } from 'lucide-react';
 import { supabase } from '../supabase.js';
 import { type SweetAlertOptions } from './SweetAlertModal.js';
@@ -1266,7 +1271,7 @@ export function ContactPageModule({
       : 'We welcome inquiries from community members, families needing safeguarding assistance, prospective volunteers, and institutional partners.'
   );
 
-  // Contact Details
+  // Contact Details & Multiple Items Lists
   const [address, setAddress] = useState(
     org.physical_address || contactDetails.street_address || contactDetails.physical_address_en || 'Mburahati Barafu, Ubungo, Dar es Salaam, Tanzania'
   );
@@ -1282,6 +1287,65 @@ export function ContactPageModule({
   const [emergencyPhone, setEmergencyPhone] = useState(
     val.emergency_phone || contactDetails.emergency_phone || '+255 784 555 123'
   );
+
+  // Multi-item phone numbers list
+  const [phonesList, setPhonesList] = useState<Array<{ title: string; number: string }>>(() => {
+    if (Array.isArray(val.phones_list) && val.phones_list.length > 0) return val.phones_list;
+    if (Array.isArray(contactDetails.phones_list) && contactDetails.phones_list.length > 0) return contactDetails.phones_list;
+    const initial = [];
+    if (org.primary_phone || contactDetails.primary_phone) {
+      initial.push({ title: 'Main Office', number: org.primary_phone || contactDetails.primary_phone });
+    } else {
+      initial.push({ title: 'Main Office', number: '+255 754 282 474' });
+    }
+    if (val.emergency_phone || contactDetails.emergency_phone) {
+      initial.push({ title: 'Child Protection Helpline', number: val.emergency_phone || contactDetails.emergency_phone });
+    }
+    return initial;
+  });
+  const [newPhoneTitle, setNewPhoneTitle] = useState('');
+  const [newPhoneNumber, setNewPhoneNumber] = useState('');
+
+  // Multi-item emails / contact departments list
+  const [emailsList, setEmailsList] = useState<Array<{ title: string; email: string }>>(() => {
+    if (Array.isArray(val.emails_list) && val.emails_list.length > 0) return val.emails_list;
+    if (Array.isArray(contactDetails.emails_list) && contactDetails.emails_list.length > 0) return contactDetails.emails_list;
+    const initial = [];
+    if (org.primary_email || contactDetails.primary_email) {
+      initial.push({ title: 'General Inquiries', email: org.primary_email || contactDetails.primary_email });
+    } else {
+      initial.push({ title: 'General Inquiries', email: 'info@babawatoto.or.tz' });
+    }
+    return initial;
+  });
+  const [newEmailTitle, setNewEmailTitle] = useState('');
+  const [newEmailAddress, setNewEmailAddress] = useState('');
+
+  // Multi-item physical addresses list
+  const [addressesList, setAddressesList] = useState<Array<{ title: string; address: string }>>(() => {
+    if (Array.isArray(val.addresses_list) && val.addresses_list.length > 0) return val.addresses_list;
+    if (Array.isArray(contactDetails.addresses_list) && contactDetails.addresses_list.length > 0) return contactDetails.addresses_list;
+    return [
+      {
+        title: 'Head Office & Centre',
+        address: org.physical_address || contactDetails.street_address || contactDetails.physical_address_en || 'St. Anne Marie Street, House No. 27, Morogoro Road, Mbezi Kwa Msuguri, Dar es Salaam, Tanzania',
+      },
+    ];
+  });
+  const [newAddressTitle, setNewAddressTitle] = useState('');
+  const [newAddressText, setNewAddressText] = useState('');
+
+  // Multi-item links list (Link Title & Link URL)
+  const [linksList, setLinksList] = useState<Array<{ title: string; url: string }>>(() => {
+    if (Array.isArray(val.links_list) && val.links_list.length > 0) return val.links_list;
+    if (Array.isArray(contactDetails.links) && contactDetails.links.length > 0) return contactDetails.links;
+    return [
+      { title: 'Babawatoto Official Portal', url: 'https://babawatoto.or.tz' },
+      { title: 'Child Safeguarding Policy', url: 'https://babawatoto.or.tz/safeguarding' },
+    ];
+  });
+  const [newLinkTitle, setNewLinkTitle] = useState('');
+  const [newLinkUrl, setNewLinkUrl] = useState('');
 
   const [isSaving, setIsSaving] = useState(false);
   const [autoStatus, setAutoStatus] = useState<AutoSaveStatus>('idle');
@@ -1302,9 +1366,73 @@ export function ContactPageModule({
         if (v.lead_description !== undefined) setLeadDescription(v.lead_description);
         if (v.office_hours !== undefined) setHours(v.office_hours);
         if (v.emergency_phone !== undefined) setEmergencyPhone(v.emergency_phone);
+        if (Array.isArray(v.phones_list)) setPhonesList(v.phones_list);
+        if (Array.isArray(v.emails_list)) setEmailsList(v.emails_list);
+        if (Array.isArray(v.addresses_list)) setAddressesList(v.addresses_list);
+        if (Array.isArray(v.links_list)) setLinksList(v.links_list);
       }
     }
   }, [siteSettings]);
+
+  const handleAddPhone = () => {
+    if (!newPhoneNumber.trim()) {
+      notify('Please enter a phone number', true);
+      return;
+    }
+    const updated = [...phonesList, { title: newPhoneTitle.trim() || 'Office Phone', number: newPhoneNumber.trim() }];
+    setPhonesList(updated);
+    setNewPhoneTitle('');
+    setNewPhoneNumber('');
+  };
+
+  const handleRemovePhone = (index: number) => {
+    setPhonesList(phonesList.filter((_, i) => i !== index));
+  };
+
+  const handleAddEmail = () => {
+    if (!newEmailAddress.trim()) {
+      notify('Please enter an email address', true);
+      return;
+    }
+    const updated = [...emailsList, { title: newEmailTitle.trim() || 'General Department', email: newEmailAddress.trim() }];
+    setEmailsList(updated);
+    setNewEmailTitle('');
+    setNewEmailAddress('');
+  };
+
+  const handleRemoveEmail = (index: number) => {
+    setEmailsList(emailsList.filter((_, i) => i !== index));
+  };
+
+  const handleAddAddress = () => {
+    if (!newAddressText.trim()) {
+      notify('Please enter address details', true);
+      return;
+    }
+    const updated = [...addressesList, { title: newAddressTitle.trim() || 'Office Location', address: newAddressText.trim() }];
+    setAddressesList(updated);
+    setNewAddressTitle('');
+    setNewAddressText('');
+  };
+
+  const handleRemoveAddress = (index: number) => {
+    setAddressesList(addressesList.filter((_, i) => i !== index));
+  };
+
+  const handleAddLink = () => {
+    if (!newLinkUrl.trim()) {
+      notify('Please enter a link URL', true);
+      return;
+    }
+    const updated = [...linksList, { title: newLinkTitle.trim() || newLinkUrl.trim(), url: newLinkUrl.trim() }];
+    setLinksList(updated);
+    setNewLinkTitle('');
+    setNewLinkUrl('');
+  };
+
+  const handleRemoveLink = (index: number) => {
+    setLinksList(linksList.filter((_, i) => i !== index));
+  };
 
   const handleSave = async (e?: React.FormEvent, isManual = true) => {
     if (e) e.preventDefault();
@@ -1320,6 +1448,10 @@ export function ContactPageModule({
     }
 
     try {
+      const primaryPhoneVal = phonesList[0]?.number || phone.trim();
+      const primaryEmailVal = emailsList[0]?.email || email.trim();
+      const primaryAddressVal = addressesList[0]?.address || address.trim();
+
       const contactPayload = {
         ...val,
         hero_badge: heroBadge.trim(),
@@ -1329,24 +1461,39 @@ export function ContactPageModule({
         lead_title: leadTitle.trim(),
         lead_description: leadDescription.trim(),
         office_hours: hours.trim(),
-        emergency_phone: emergencyPhone.trim(),
+        emergency_phone: phonesList[1]?.number || emergencyPhone.trim(),
+        phones_list: phonesList,
+        emails_list: emailsList,
+        addresses_list: addressesList,
+        links_list: linksList,
+        links: linksList,
       };
 
       const orgPayload = {
         ...org,
-        physical_address: address.trim(),
-        primary_phone: phone.trim(),
-        primary_email: email.trim(),
+        physical_address: primaryAddressVal,
+        primary_phone: primaryPhoneVal,
+        primary_email: primaryEmailVal,
+        phones_list: phonesList,
+        emails_list: emailsList,
+        addresses_list: addressesList,
+        links: linksList,
       };
 
       const detailsPayload = {
         ...contactDetails,
-        street_address: address.trim(),
-        physical_address_en: address.trim(),
-        primary_phone: phone.trim(),
-        primary_email: email.trim(),
+        street_address: primaryAddressVal,
+        physical_address_en: primaryAddressVal,
+        primary_phone: primaryPhoneVal,
+        primary_email: primaryEmailVal,
         office_hours: hours.trim(),
-        emergency_phone: emergencyPhone.trim(),
+        emergency_phone: phonesList[1]?.number || emergencyPhone.trim(),
+        phones: phonesList.map((p) => p.number),
+        phones_list: phonesList,
+        emails_list: emailsList,
+        addresses_list: addressesList,
+        links: linksList,
+        links_list: linksList,
       };
 
       const [res1, res2, res3] = await Promise.all([
@@ -1416,7 +1563,7 @@ export function ContactPageModule({
     return () => {
       if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
     };
-  }, [heroBadge, heroTitle, heroImage, leadTitle, leadDescription, address, phone, email, hours, emergencyPhone]);
+  }, [heroBadge, heroTitle, heroImage, leadTitle, leadDescription, hours, emergencyPhone, phonesList, emailsList, addressesList, linksList]);
 
   return (
     <div className="space-y-6">
@@ -1430,7 +1577,7 @@ export function ContactPageModule({
             Contact Us Page Content
           </h1>
           <p className="text-sm text-gray-600 mt-0.5">
-            Edit office address, phone numbers, email, hours, and banner narrative for /contact.
+            Manage contact channels, multiple phone numbers, department emails, physical locations, and official links.
           </p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
@@ -1447,7 +1594,7 @@ export function ContactPageModule({
         </div>
       </div>
 
-      <form onSubmit={handleSave} className="bg-white border border-gray-200 p-6 rounded-xl space-y-5">
+      <form onSubmit={handleSave} className="bg-white border border-gray-200 p-6 rounded-xl space-y-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-bold text-gray-700 uppercase mb-1">
@@ -1481,60 +1628,326 @@ export function ContactPageModule({
           notify={notify}
         />
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs font-bold text-gray-700 uppercase mb-1 flex items-center gap-1.5">
-              <MapPin className="w-3.5 h-3.5 text-[#E6A500]" />
-              Physical Office Address
+        {/* 1. MULTIPLE PHONE NUMBERS SECTION */}
+        <div className="p-4 rounded-xl border border-gray-200 bg-gray-50/50 space-y-3">
+          <div className="flex items-center justify-between">
+            <label className="block text-xs font-bold text-gray-900 uppercase flex items-center gap-1.5">
+              <Phone className="w-4 h-4 text-[#E6A500]" />
+              Phone Numbers ({phonesList.length})
             </label>
-            <input
-              type="text"
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:outline-none focus:border-black"
-            />
+            <span className="text-[11px] text-gray-500">You can add multiple phone numbers with labels</span>
           </div>
-          <div>
-            <label className="block text-xs font-bold text-gray-700 uppercase mb-1 flex items-center gap-1.5">
-              <PhoneCall className="w-3.5 h-3.5 text-[#E6A500]" />
-              Primary Contact Phone
-            </label>
-            <input
-              type="text"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:outline-none focus:border-black"
-            />
+
+          {/* Add Phone Form */}
+          <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-end bg-white p-3 rounded-lg border border-gray-200">
+            <div className="sm:col-span-4">
+              <label className="block text-[11px] font-bold text-gray-600 mb-1">Phone Title / Label *</label>
+              <input
+                type="text"
+                placeholder="e.g. Main Office, Helpline, Executive Line"
+                value={newPhoneTitle}
+                onChange={(e) => setNewPhoneTitle(e.target.value)}
+                className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:outline-none focus:border-black"
+              />
+            </div>
+            <div className="sm:col-span-5">
+              <label className="block text-[11px] font-bold text-gray-600 mb-1">Phone Number *</label>
+              <input
+                type="text"
+                placeholder="e.g. +255 754 282 474"
+                value={newPhoneNumber}
+                onChange={(e) => setNewPhoneNumber(e.target.value)}
+                className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:outline-none focus:border-black font-mono"
+              />
+            </div>
+            <div className="sm:col-span-3">
+              <button
+                type="button"
+                onClick={handleAddPhone}
+                className="w-full py-2 bg-[#E6A500] hover:bg-[#d49700] text-black font-bold text-xs rounded-lg transition flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Add Phone
+              </button>
+            </div>
           </div>
+
+          {/* Phone Numbers List */}
+          {phonesList.length > 0 ? (
+            <div className="space-y-2 pt-1">
+              {phonesList.map((p, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-center justify-between gap-3 p-2.5 bg-white border border-gray-200 rounded-lg text-xs"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <Phone className="w-3.5 h-3.5 text-[#E6A500] shrink-0" />
+                    <span className="font-bold text-gray-900 bg-amber-50 text-amber-900 px-2 py-0.5 rounded text-[11px] border border-amber-200">
+                      {p.title}
+                    </span>
+                    <span className="font-mono text-gray-800">{p.number}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleRemovePhone(idx)}
+                    className="p-1 text-gray-400 hover:text-red-600 rounded transition"
+                    title="Remove phone number"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-gray-500 italic py-1">No phone numbers added yet. Add at least one above.</p>
+          )}
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs font-bold text-gray-700 uppercase mb-1 flex items-center gap-1.5">
-              <Mail className="w-3.5 h-3.5 text-[#E6A500]" />
-              Official Email Address
+        {/* 2. MULTIPLE CONTACT EMAILS SECTION */}
+        <div className="p-4 rounded-xl border border-gray-200 bg-gray-50/50 space-y-3">
+          <div className="flex items-center justify-between">
+            <label className="block text-xs font-bold text-gray-900 uppercase flex items-center gap-1.5">
+              <Mail className="w-4 h-4 text-[#E6A500]" />
+              Official Emails &amp; Contact Departments ({emailsList.length})
             </label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:outline-none focus:border-black"
-            />
+            <span className="text-[11px] text-gray-500">You can add multiple department or contact emails</span>
           </div>
-          <div>
-            <label className="block text-xs font-bold text-gray-700 uppercase mb-1 flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5 text-[#E6A500]" />
-              Working Hours
-            </label>
-            <input
-              type="text"
-              value={hours}
-              onChange={(e) => setHours(e.target.value)}
-              className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:outline-none focus:border-black"
-            />
+
+          {/* Add Email Form */}
+          <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-end bg-white p-3 rounded-lg border border-gray-200">
+            <div className="sm:col-span-4">
+              <label className="block text-[11px] font-bold text-gray-600 mb-1">Contact Title / Department *</label>
+              <input
+                type="text"
+                placeholder="e.g. General Inquiries, Partnerships, Welfare Desk"
+                value={newEmailTitle}
+                onChange={(e) => setNewEmailTitle(e.target.value)}
+                className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:outline-none focus:border-black"
+              />
+            </div>
+            <div className="sm:col-span-5">
+              <label className="block text-[11px] font-bold text-gray-600 mb-1">Email Address *</label>
+              <input
+                type="email"
+                placeholder="e.g. info@babawatoto.or.tz"
+                value={newEmailAddress}
+                onChange={(e) => setNewEmailAddress(e.target.value)}
+                className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:outline-none focus:border-black font-mono"
+              />
+            </div>
+            <div className="sm:col-span-3">
+              <button
+                type="button"
+                onClick={handleAddEmail}
+                className="w-full py-2 bg-[#E6A500] hover:bg-[#d49700] text-black font-bold text-xs rounded-lg transition flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Add Email
+              </button>
+            </div>
           </div>
+
+          {/* Emails List */}
+          {emailsList.length > 0 ? (
+            <div className="space-y-2 pt-1">
+              {emailsList.map((em, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-center justify-between gap-3 p-2.5 bg-white border border-gray-200 rounded-lg text-xs"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <Mail className="w-3.5 h-3.5 text-[#E6A500] shrink-0" />
+                    <span className="font-bold text-gray-900 bg-blue-50 text-blue-900 px-2 py-0.5 rounded text-[11px] border border-blue-200">
+                      {em.title}
+                    </span>
+                    <span className="font-mono text-gray-800">{em.email}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveEmail(idx)}
+                    className="p-1 text-gray-400 hover:text-red-600 rounded transition"
+                    title="Remove email"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-gray-500 italic py-1">No contact emails added yet. Add at least one above.</p>
+          )}
         </div>
 
+        {/* 3. MULTIPLE PHYSICAL ADDRESSES SECTION */}
+        <div className="p-4 rounded-xl border border-gray-200 bg-gray-50/50 space-y-3">
+          <div className="flex items-center justify-between">
+            <label className="block text-xs font-bold text-gray-900 uppercase flex items-center gap-1.5">
+              <MapPin className="w-4 h-4 text-[#E6A500]" />
+              Office &amp; Centre Locations ({addressesList.length})
+            </label>
+            <span className="text-[11px] text-gray-500">You can add multiple physical or field office locations</span>
+          </div>
+
+          {/* Add Address Form */}
+          <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-end bg-white p-3 rounded-lg border border-gray-200">
+            <div className="sm:col-span-4">
+              <label className="block text-[11px] font-bold text-gray-600 mb-1">Location Title *</label>
+              <input
+                type="text"
+                placeholder="e.g. Head Office, Mburahati Children Centre"
+                value={newAddressTitle}
+                onChange={(e) => setNewAddressTitle(e.target.value)}
+                className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:outline-none focus:border-black"
+              />
+            </div>
+            <div className="sm:col-span-5">
+              <label className="block text-[11px] font-bold text-gray-600 mb-1">Address Details *</label>
+              <input
+                type="text"
+                placeholder="e.g. St. Anne Marie Street, House No. 27, Morogoro Road"
+                value={newAddressText}
+                onChange={(e) => setNewAddressText(e.target.value)}
+                className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:outline-none focus:border-black"
+              />
+            </div>
+            <div className="sm:col-span-3">
+              <button
+                type="button"
+                onClick={handleAddAddress}
+                className="w-full py-2 bg-[#E6A500] hover:bg-[#d49700] text-black font-bold text-xs rounded-lg transition flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Add Location
+              </button>
+            </div>
+          </div>
+
+          {/* Addresses List */}
+          {addressesList.length > 0 ? (
+            <div className="space-y-2 pt-1">
+              {addressesList.map((ad, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-center justify-between gap-3 p-2.5 bg-white border border-gray-200 rounded-lg text-xs"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <MapPin className="w-3.5 h-3.5 text-[#E6A500] shrink-0" />
+                    <span className="font-bold text-gray-900 bg-emerald-50 text-emerald-900 px-2 py-0.5 rounded text-[11px] border border-emerald-200 shrink-0">
+                      {ad.title}
+                    </span>
+                    <span className="text-gray-800 truncate">{ad.address}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveAddress(idx)}
+                    className="p-1 text-gray-400 hover:text-red-600 rounded transition shrink-0"
+                    title="Remove address"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-gray-500 italic py-1">No office locations added yet. Add at least one above.</p>
+          )}
+        </div>
+
+        {/* 4. MULTIPLE OFFICIAL LINKS SECTION (Link Title & Link URL) */}
+        <div className="p-4 rounded-xl border border-gray-200 bg-gray-50/50 space-y-3">
+          <div className="flex items-center justify-between">
+            <label className="block text-xs font-bold text-gray-900 uppercase flex items-center gap-1.5">
+              <LinkIcon className="w-4 h-4 text-[#E6A500]" />
+              Official Links, Policies &amp; Resources ({linksList.length})
+            </label>
+            <span className="text-[11px] text-gray-500">Add Link Title and Link URL for public reference</span>
+          </div>
+
+          {/* Add Link Form: Link Title first, then Link URL */}
+          <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-end bg-white p-3 rounded-lg border border-gray-200">
+            <div className="sm:col-span-5">
+              <label className="block text-[11px] font-bold text-gray-600 mb-1">Link Title *</label>
+              <input
+                type="text"
+                placeholder="e.g. Child Safeguarding Policy (PDF), Ministry Portal"
+                value={newLinkTitle}
+                onChange={(e) => setNewLinkTitle(e.target.value)}
+                className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:outline-none focus:border-black font-semibold"
+              />
+            </div>
+            <div className="sm:col-span-5">
+              <label className="block text-[11px] font-bold text-gray-600 mb-1">Link URL *</label>
+              <input
+                type="text"
+                placeholder="https://example.org/resource"
+                value={newLinkUrl}
+                onChange={(e) => setNewLinkUrl(e.target.value)}
+                className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:outline-none focus:border-black font-mono"
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <button
+                type="button"
+                onClick={handleAddLink}
+                className="w-full py-2 bg-[#E6A500] hover:bg-[#d49700] text-black font-bold text-xs rounded-lg transition flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Add Link
+              </button>
+            </div>
+          </div>
+
+          {/* Links List */}
+          {linksList.length > 0 ? (
+            <div className="space-y-2 pt-1">
+              {linksList.map((lnk, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-center justify-between gap-3 p-2.5 bg-white border border-gray-200 rounded-lg text-xs"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <ExternalLink className="w-3.5 h-3.5 text-[#E6A500] shrink-0" />
+                    <span className="font-bold text-gray-900 truncate">{lnk.title}</span>
+                    <a
+                      href={lnk.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="font-mono text-gray-500 hover:text-black hover:underline truncate text-[11px]"
+                    >
+                      {lnk.url}
+                    </a>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveLink(idx)}
+                    className="p-1 text-gray-400 hover:text-red-600 rounded transition shrink-0"
+                    title="Remove link"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-gray-500 italic py-1">No links added yet. Add links using the form above.</p>
+          )}
+        </div>
+
+        {/* Working Hours */}
+        <div>
+          <label className="block text-xs font-bold text-gray-700 uppercase mb-1 flex items-center gap-1.5">
+            <Clock className="w-3.5 h-3.5 text-[#E6A500]" />
+            Working Hours
+          </label>
+          <input
+            type="text"
+            value={hours}
+            onChange={(e) => setHours(e.target.value)}
+            className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:outline-none focus:border-black"
+          />
+        </div>
+
+        {/* Lead Description */}
         <div>
           <label className="block text-xs font-bold text-gray-700 uppercase mb-1">
             Lead Narrative Description

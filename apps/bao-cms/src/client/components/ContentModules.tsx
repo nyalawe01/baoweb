@@ -2481,31 +2481,31 @@ export function NewsAndEventsModule({
                 <span className="text-xs text-[#555B57]">{links.length} link(s) added</span>
               </div>
 
-              {/* Input row to add new link */}
+              {/* Input row to add new link: Link Title first, then Link URL */}
               <div className="grid grid-cols-1 md:grid-cols-12 gap-2.5 items-end">
-                <div className="md:col-span-6">
+                <div className="md:col-span-5">
+                  <label className="block text-[11px] font-bold text-[#555B57] mb-1">Link Title *</label>
+                  <input
+                    value={newLinkLabel}
+                    onChange={(e) => setNewLinkLabel(e.target.value)}
+                    placeholder="e.g. Read Full Report, Registration Form, Partner Release"
+                    className="w-full px-3 py-2 rounded-lg border border-[#E5E7E5] text-xs text-black bg-white font-medium"
+                  />
+                </div>
+                <div className="md:col-span-5">
                   <label className="block text-[11px] font-bold text-[#555B57] mb-1">Link URL *</label>
                   <input
                     value={newLinkUrl}
                     onChange={(e) => setNewLinkUrl(e.target.value)}
                     placeholder="https://example.com/press-release or https://..."
-                    className="w-full px-3 py-2 rounded-lg border border-[#E5E7E5] text-xs text-black bg-white"
-                  />
-                </div>
-                <div className="md:col-span-4">
-                  <label className="block text-[11px] font-bold text-[#555B57] mb-1">Link Label / Title (Optional)</label>
-                  <input
-                    value={newLinkLabel}
-                    onChange={(e) => setNewLinkLabel(e.target.value)}
-                    placeholder="e.g. Read Full Report ↗"
-                    className="w-full px-3 py-2 rounded-lg border border-[#E5E7E5] text-xs text-black bg-white"
+                    className="w-full px-3 py-2 rounded-lg border border-[#E5E7E5] text-xs text-black bg-white font-mono"
                   />
                 </div>
                 <div className="md:col-span-2">
                   <button
                     type="button"
                     onClick={handleAddLink}
-                    className="w-full py-2 rounded-lg bg-[#E6A500] hover:bg-[#d49700] text-black text-xs font-bold flex items-center justify-center gap-1 cursor-pointer transition"
+                    className="w-full py-2 rounded-lg bg-[#E6A500] hover:bg-[#d49700] text-black text-xs font-bold flex items-center justify-center gap-1 cursor-pointer transition shadow-xs"
                   >
                     <Plus className="w-3.5 h-3.5" /> Add Link
                   </button>
