@@ -255,7 +255,7 @@ export function StandardPageTemplate({
             </div>
             {navigate && (
               <button
-                onClick={() => navigate('/news-events')}
+                onClick={() => navigate('/news')}
                 className="bao-btn px-4 py-2 text-black font-extrabold text-[15px] inline-flex items-center gap-1.5"
               >
                 <span>View All News</span>

@@ -166,7 +166,7 @@ export function App() {
           <ProjectsView lang={lang} slug={secondSeg} siteData={siteData} navigate={navigate} />
         ) : firstSeg === 'impact' ? (
           <ImpactView lang={lang} siteData={siteData} navigate={navigate} />
-        ) : firstSeg === 'stories' || firstSeg === 'news-events' || firstSeg === 'news' || firstSeg === 'events' ? (
+        ) : firstSeg === 'stories' || firstSeg === 'news' || firstSeg === 'news-events' ? (
           <NewsAndEventsView lang={lang} slug={secondSeg} siteData={siteData} navigate={navigate} />
         ) : firstSeg === 'resources' ? (
           <ResourcesView lang={lang} subpage={secondSeg} siteData={siteData} navigate={navigate} />

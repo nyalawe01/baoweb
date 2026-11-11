@@ -105,12 +105,12 @@ export function Header({
           : 'Kuelewa hali halisi, haki na uwezo wa watoto wanaoishi na kufanya kazi mitaani',
     },
     {
-      href: '/news-events',
-      title: lang === 'en' ? 'News' : 'Habari na Matukio',
+      href: '/news',
+      title: lang === 'en' ? 'News' : 'Habari',
       desc:
         lang === 'en'
-          ? 'Latest organizational updates, field stories, and community events'
-          : 'Habari za hivi karibuni za shirika na matukio ya jamii',
+          ? 'Latest organizational updates, field stories, and press releases'
+          : 'Habari za hivi karibuni za shirika na simulizi za mabadiliko',
     },
     {
       href: '/contact',
@@ -636,7 +636,7 @@ export function Footer({
           { href: '/about-street-children', label: 'About street children', isExternal: false },
           { href: '/projects', label: 'What we do (Projects)', isExternal: false },
           { href: '/resources/gallery', label: 'Our Gallery', isExternal: false },
-          { href: '/news-events', label: 'News & Stories', isExternal: false },
+          { href: '/news', label: 'News & Stories', isExternal: false },
           { href: '/contact', label: 'Contact us', isExternal: false },
         ];
 

@@ -284,7 +284,7 @@ export function StandardPageTemplate({
             </div>
             {navigate && (
               <button
-                onClick={() => navigate('/news-events')}
+                onClick={() => navigate('/news')}
                 className="bao-btn px-4 py-2 text-black font-extrabold text-[15px] inline-flex items-center gap-1.5"
               >
                 <span>View All News</span>
@@ -326,7 +326,7 @@ export function StandardPageTemplate({
                       {navigate && (
                         <div className="pt-2">
                           <button
-                            onClick={() => navigate('/news-events')}
+                            onClick={() => navigate('/news')}
                             className="text-[15px] font-bold text-black inline-flex items-center gap-1 group-hover:translate-x-1 transition"
                           >
                             <span>Read full article</span>
@@ -2123,13 +2123,13 @@ export function ImpactView({ lang, siteData }: { lang: LanguageCode; siteData: a
  */
 export function StoriesView({ navigate }: { lang?: LanguageCode; siteData?: any; navigate?: (path: string) => void }) {
   useEffect(() => {
-    navigate?.('/news-events');
+    navigate?.('/news');
   }, [navigate]);
   return null;
 }
 
 /**
- * News & Stories of Change Page (/news-events, /news, /news/:slug)
+ * News & Stories of Change Page (/news, /news/:slug)
  */
 export function NewsAndEventsView({
   lang,
@@ -2146,9 +2146,9 @@ export function NewsAndEventsView({
   const news = siteData.news || [];
   const stories = siteData.stories || [];
   const media = siteData.media || [];
-  const cmsPage = (siteData.pages || []).find((p: any) => p.page_key === 'news-events' && p.status !== 'archived');
+  const cmsPage = (siteData.pages || []).find((p: any) => (p.page_key === 'news' || p.page_key === 'news-events') && p.status !== 'archived');
   const tr = (cmsPage?.page_translations || []).find((t: any) => t.language === lang) || (cmsPage?.page_translations || [])[0] || {};
-  const newsSettings = siteData.settings?.news_events_settings || {};
+  const newsSettings = siteData.settings?.news_page_settings || siteData.settings?.news_events_settings || {};
   const pageTitle = newsSettings.hero_title || tr.title || (lang === 'en' ? "News & Stories of Change" : "Habari na Simulizi za Mabadiliko");
   const pageBadge = newsSettings.hero_badge || tr.hero_tag || (lang === 'en' ? "Field Updates & Lived Journeys" : "Taarifa za Nyanjani na Simulizi");
   const heroImage = newsSettings.hero_banner_image || resolveMediaUrl(cmsPage?.featured_media_id, media) || "/media/public/images/programmes/arts1.webp";
@@ -2490,7 +2490,7 @@ export function NewsAndEventsView({
         <div className="w-full bg-[#FBFBFA] border-b border-gray-200">
           <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
             <button
-              onClick={() => navigate?.('/news-events')}
+              onClick={() => navigate?.('/news')}
               className="bao-btn px-4 py-2 text-black font-extrabold text-sm inline-flex items-center gap-2 cursor-pointer hover:bg-black hover:text-white transition"
             >
               <ArrowLeft className="w-4 h-4" />
@@ -2499,7 +2499,7 @@ export function NewsAndEventsView({
             <div className="text-xs font-semibold text-slate-500 hidden sm:flex items-center gap-1.5 truncate">
               <span className="cursor-pointer hover:underline" onClick={() => navigate?.('/')}>Home</span>
               <span>/</span>
-              <span className="cursor-pointer hover:underline" onClick={() => navigate?.('/news-events')}>News</span>
+              <span className="cursor-pointer hover:underline" onClick={() => navigate?.('/news')}>News</span>
               <span>/</span>
               <span className="text-black font-bold truncate max-w-xs">{activeItem.title}</span>
             </div>
@@ -2576,10 +2576,10 @@ export function NewsAndEventsView({
           <section className="space-y-6 pt-8 border-t border-gray-200">
             <div>
               <span className="px-3 py-1 bg-[#E6A500] text-black font-extrabold uppercase text-[12px] tracking-wider inline-block mb-1.5">
-                {lang === 'en' ? 'Field Documentation & Event Gallery' : 'Nyaraka za Picha na Matukio'}
+                {lang === 'en' ? 'Field Documentation & Gallery' : 'Nyaraka za Picha na Simulizi'}
               </span>
               <h3 className="text-2xl sm:text-3xl font-extrabold text-black">
-                {lang === 'en' ? 'Photo Documentation from the Field' : 'Picha za Matukio kutoka Nyanjani'}
+                {lang === 'en' ? 'Photo Documentation from the Field' : 'Picha za Ushahidi kutoka Nyanjani'}
               </h3>
               <p className="text-sm sm:text-base text-slate-600 mt-1 max-w-2xl">
                 {lang === 'en'
@@ -2628,7 +2628,7 @@ export function NewsAndEventsView({
                   </h3>
                 </div>
                 <button
-                  onClick={() => navigate?.('/news-events')}
+                  onClick={() => navigate?.('/news')}
                   className="bao-btn px-4 py-2 text-black font-extrabold text-xs inline-flex items-center gap-1.5 cursor-pointer"
                 >
                   <span>{lang === 'en' ? 'View All' : 'Zote'}</span>
@@ -2700,7 +2700,7 @@ export function NewsAndEventsView({
           {/* Bottom Back Button */}
           <div className="pt-6 text-center">
             <button
-              onClick={() => navigate?.('/news-events')}
+              onClick={() => navigate?.('/news')}
               className="bao-btn px-7 py-3 text-black font-extrabold text-base inline-flex items-center gap-2 cursor-pointer hover:bg-black hover:text-white transition"
             >
               <ArrowLeft className="w-4 h-4" />

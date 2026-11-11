@@ -188,7 +188,6 @@ app.get('/api/public/site-data', async (_req: Request, res: Response) => {
       projRes,
       storiesRes,
       newsRes,
-      eventsRes,
       partnersRes,
       teamRes,
       pubsRes,
@@ -222,12 +221,6 @@ app.get('/api/public/site-data', async (_req: Request, res: Response) => {
         .eq('content_type', 'news')
         .neq('status', 'archived')
         .order('published_at', { ascending: false }),
-      supabase
-        .from('articles')
-        .select('*, article_translations(*)')
-        .eq('content_type', 'event')
-        .neq('status', 'archived')
-        .order('event_start_at', { ascending: true }),
       supabase
         .from('partners')
         .select('*')
@@ -267,7 +260,7 @@ app.get('/api/public/site-data', async (_req: Request, res: Response) => {
       projects: projRes.data || [],
       stories: storiesRes.data || [],
       news: newsRes.data || [],
-      events: eventsRes.data || [],
+      events: [],
       partners: partnersRes.data || [],
       team: teamRes.data || [],
       publications: pubsRes.data || [],
@@ -381,7 +374,7 @@ app.get('/sitemap.xml', async (_req: Request, res: Response) => {
     '/projects',
     '/impact',
     '/stories',
-    '/news-events',
+    '/news',
     '/resources',
     '/get-involved',
     '/contact',

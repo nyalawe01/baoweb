@@ -588,13 +588,20 @@ export function NewsPageModule({
         lead_description: leadDescription.trim(),
       };
 
-      const { error } = await supabase.from('site_settings').upsert(
-        { key: 'news_events_settings', value: payload, is_public: true },
-        { onConflict: 'key' }
-      );
-      if (error) throw error;
+      const [res1, res2] = await Promise.all([
+        supabase.from('site_settings').upsert(
+          { key: 'news_events_settings', value: payload, is_public: true },
+          { onConflict: 'key' }
+        ),
+        supabase.from('site_settings').upsert(
+          { key: 'news_page_settings', value: payload, is_public: true },
+          { onConflict: 'key' }
+        ),
+      ]);
+      if (res1.error) throw res1.error;
+      if (res2.error) throw res2.error;
 
-      broadcastLivePublish({ module: 'news_events_settings', key: 'news_events_settings' });
+      broadcastLivePublish({ module: 'news_page_settings', key: 'news_page_settings' });
       setAutoStatus('saved');
       setLastSaved(new Date());
 

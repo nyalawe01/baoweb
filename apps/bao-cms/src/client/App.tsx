@@ -33,7 +33,6 @@ import {
   History,
   Users,
   Heart,
-  Calendar,
   MessageSquareQuote,
   PhoneCall,
   FileText,
@@ -59,7 +58,6 @@ import {
   StoriesModule,
   NewsAndEventsModule,
   NewsModule,
-  EventsModule,
 } from './components/ContentModules.js';
 import {
   HeroBannerModule,
@@ -101,7 +99,6 @@ type ActiveModule =
   | 'page-contact'
   | 'projects'
   | 'news'
-  | 'events'
   | 'news-events'
   | 'stories'
   | 'testimonies'
@@ -135,7 +132,6 @@ export function App() {
   const [programmes, setProgrammes] = useState<any[]>([]);
   const [projects, setProjects] = useState<any[]>([]);
   const [articles, setArticles] = useState<any[]>([]);
-  const [events, setEvents] = useState<any[]>([]);
   const [stories, setStories] = useState<any[]>([]);
   const [media, setMedia] = useState<any[]>([]);
   const [partners, setPartners] = useState<any[]>([]);
@@ -183,7 +179,6 @@ export function App() {
         progRes,
         projRes,
         artRes,
-        evRes,
         storyRes,
         mediaRes,
         partRes,
@@ -202,7 +197,6 @@ export function App() {
         supabase.from('programmes').select('*, programme_translations(*)').order('display_order'),
         supabase.from('projects').select('*, project_translations(*)').order('is_featured', { ascending: false }).order('display_order').order('created_at', { ascending: false }),
         supabase.from('articles').select('*, article_translations(*)').eq('content_type', 'news').order('created_at', { ascending: false }),
-        supabase.from('articles').select('*, article_translations(*)').eq('content_type', 'event').order('event_start_at', { ascending: false }),
         supabase.from('stories').select('*, story_translations(*)').order('created_at', { ascending: false }),
         supabase.from('media_assets').select('*').order('created_at', { ascending: false }),
         supabase.from('partners').select('*').order('display_order'),
@@ -222,7 +216,6 @@ export function App() {
       setProgrammes(progRes.data || []);
       setProjects(projRes.data || []);
       setArticles(artRes.data || []);
-      setEvents(evRes.data || []);
       setStories(storyRes.data || []);
       setMedia(mediaRes.data || []);
       setPartners(partRes.data || []);
@@ -295,7 +288,7 @@ export function App() {
   const handleResetToEmptyState = async () => {
     if (
       !window.confirm(
-        'Reset dynamic content tables (projects, stories, news, events, partners, publications, impact indicators) to empty states?'
+        'Reset dynamic content tables (projects, stories, news, partners, publications, impact indicators) to empty states?'
       )
     ) {
       return;
@@ -487,8 +480,7 @@ export function App() {
 
   const navContentGroup: { id: ActiveModule; label: string; icon: any }[] = [
     { id: 'projects', label: 'Projects', icon: FolderKanban },
-    { id: 'news', label: 'News', icon: Newspaper },
-    { id: 'events', label: 'Events', icon: Calendar },
+    { id: 'news', label: 'News Articles', icon: Newspaper },
     { id: 'stories', label: 'Stories of Change', icon: HeartHandshake },
     { id: 'testimonies', label: 'Testimonies', icon: MessageSquareQuote },
     { id: 'resources-impact', label: 'Impact & Publications', icon: BarChart3 },
@@ -1397,36 +1389,9 @@ export function App() {
             />
           )}
 
-          {activeModule === 'news' && (
+          {(activeModule === 'news' || activeModule === 'news-events') && (
             <NewsModule
               articles={articles}
-              events={events}
-              media={media}
-              accessToken={session?.access_token || ''}
-              canPublish={canPublish}
-              onRefresh={refreshAll}
-              notify={notify}
-              showAlert={setSweetAlert}
-            />
-          )}
-
-          {activeModule === 'events' && (
-            <EventsModule
-              articles={articles}
-              events={events}
-              media={media}
-              accessToken={session?.access_token || ''}
-              canPublish={canPublish}
-              onRefresh={refreshAll}
-              notify={notify}
-              showAlert={setSweetAlert}
-            />
-          )}
-
-          {activeModule === 'news-events' && (
-            <NewsAndEventsModule
-              articles={articles}
-              events={events}
               media={media}
               accessToken={session?.access_token || ''}
               canPublish={canPublish}

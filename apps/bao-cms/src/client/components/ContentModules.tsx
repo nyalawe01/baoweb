@@ -1774,28 +1774,24 @@ export function StoriesModule({
 
 export function NewsAndEventsModule({
   articles,
-  events,
   media,
   accessToken,
   canPublish,
   onRefresh,
   notify,
   showAlert,
-  initialTab = 'news',
-  hideTabSwitcher = false,
 }: {
   articles: any[];
-  events: any[];
+  events?: any[];
   media: any[];
   accessToken?: string;
-  canPublish: boolean;
+  canPublish?: boolean;
   onRefresh: () => Promise<void>;
   notify: (msg: string, isErr?: boolean) => void;
   showAlert?: (opts: SweetAlertOptions) => void;
-  initialTab?: 'news' | 'events';
+  initialTab?: string;
   hideTabSwitcher?: boolean;
 }) {
-  const [subTab, setSubTab] = useState<'news' | 'events'>(initialTab);
   const [editingId, setEditingId] = useState<string | null>(null);
 
   // News Form State: ONLY Upload Image or Document, Title, Sub Title, Description, and Add Links
@@ -1819,15 +1815,6 @@ export function NewsAndEventsModule({
 
   const [saving, setSaving] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
-
-  // Events Form State
-  const [eventTitle, setEventTitle] = useState('');
-  const [eventSlug, setEventSlug] = useState('');
-  const [eventLocation, setEventLocation] = useState('Dar es Salaam, Tanzania');
-  const [startDate, setStartDate] = useState(new Date().toISOString().slice(0, 16));
-  const [eventSummary, setEventSummary] = useState('');
-  const [eventBodyHtml, setEventBodyHtml] = useState('');
-  const [eventImageId, setEventImageId] = useState('');
 
   const resolveMediaItem = (mediaId?: string | null) => {
     if (!mediaId) return null;
@@ -2122,118 +2109,9 @@ export function NewsAndEventsModule({
     }
   };
 
-  const handleSaveEvent = async () => {
-    if (!eventTitle.trim()) {
-      notify('Event title required.', true);
-      showAlert?.({
-        type: 'warning',
-        title: 'Title Required',
-        message: 'Please provide an event title before saving.',
-      });
-      return;
-    }
-    const finalSlug =
-      eventSlug.trim() ||
-      eventTitle
-        .trim()
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/(^-|-$)/g, '');
-
-    setSaving(true);
-    showAlert?.({
-      type: 'loading',
-      title: 'Saving Event...',
-      message: 'Writing event to database and publishing live to website...',
-    });
-    try {
-      const { data, error } = await supabase
-        .from('articles')
-        .insert({
-          content_type: 'event',
-          featured_media_id: eventImageId || null,
-          event_location: eventLocation,
-          event_start_at: new Date(startDate).toISOString(),
-          status: 'published',
-          published_at: new Date().toISOString(),
-        })
-        .select('id')
-        .single();
-
-      if (error) throw error;
-
-      for (const lang of ['en', 'sw']) {
-        await supabase.from('article_translations').insert({
-          article_id: data.id,
-          language: lang,
-          title: eventTitle.trim(),
-          slug: finalSlug,
-          excerpt: eventSummary.trim() || eventTitle.trim(),
-          body: plainTextToFormattedHtml(eventBodyHtml || eventSummary || eventTitle),
-          translation_status: 'published',
-        });
-      }
-
-      notify('Event published successfully.');
-      broadcastLivePublish({ module: 'events' });
-      await onRefresh();
-      showAlert?.({
-        type: 'success',
-        title: 'Event Published Successfully!',
-        message: `Event "${eventTitle}" has been saved and is now live on the public website!`,
-        websiteUrl: 'http://localhost:3000/news-events',
-        websiteLabel: 'View on Website ↗',
-      });
-      setEventTitle('');
-      setEventSlug('');
-      setEventSummary('');
-      setEventBodyHtml('');
-      setEventImageId('');
-    } catch (err: any) {
-      notify(err.message, true);
-      showAlert?.({
-        type: 'error',
-        title: 'Could Not Save Event',
-        message: err.message || 'An error occurred while saving the event.',
-      });
-    } finally {
-      setSaving(false);
-    }
-  };
-
   return (
     <div className="space-y-6">
-      {/* Sub-tab navigation */}
-      {!hideTabSwitcher && (
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={() => setSubTab('news')}
-            className={`px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 cursor-pointer transition ${
-              subTab === 'news'
-                ? 'bg-[#E6A500] text-black shadow-xs'
-                : 'bg-white border border-[#E5E7E5] text-black hover:bg-neutral-50'
-            }`}
-          >
-            <Newspaper className="w-4 h-4" /> News Articles ({articles.length})
-          </button>
-          <button
-            type="button"
-            onClick={() => setSubTab('events')}
-            className={`px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 cursor-pointer transition ${
-              subTab === 'events'
-                ? 'bg-[#E6A500] text-black shadow-xs'
-                : 'bg-white border border-[#E5E7E5] text-black hover:bg-neutral-50'
-            }`}
-          >
-            <Calendar className="w-4 h-4" /> Events ({events.length})
-          </button>
-        </div>
-      )}
-
-      {subTab === 'news' ? (
-        <div className="space-y-6">
-          {/* Row 1: Published News Articles List (Full Width) */}
+      {/* Row 1: Published News Articles List (Full Width) */}
           <div className="w-full bg-white rounded-xl border border-[#E5E7E5] p-5 space-y-4 shadow-xs">
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#E5E7E5] pb-3">
               <div>
@@ -2559,148 +2437,6 @@ export function NewsAndEventsModule({
             </button>
           </div>
         </div>
-      ) : (
-        /* Events View & Form */
-        <div className="space-y-6">
-          <div className="w-full bg-white rounded-xl border border-[#E5E7E5] p-5 space-y-4 shadow-xs">
-            <div className="flex items-center justify-between border-b border-[#E5E7E5] pb-3">
-              <div>
-                <h3 className="font-bold text-base text-[#000000] flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-[#E6A500]" /> Scheduled Community Events ({events.length})
-                </h3>
-                <p className="text-xs text-[#555B57]">Forums, stakeholder meetings, and cultural showcases.</p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 max-h-[300px] overflow-y-auto pr-1">
-              {events.map((ev) => {
-                const enT =
-                  (ev.article_translations || ev.event_translations || []).find((t: any) => t.language === 'en') ||
-                  (ev.article_translations || ev.event_translations || [])[0] ||
-                  {};
-                return (
-                  <div
-                    key={ev.id}
-                    className="p-4 rounded-xl border border-[#E5E7E5] hover:border-[#E6A500] transition bg-white space-y-2"
-                  >
-                    <div className="font-bold text-sm text-[#000000] truncate">{enT?.title || 'Untitled Event'}</div>
-                    <div className="text-xs text-[#555B57] flex items-center justify-between">
-                      <span className="uppercase font-semibold text-[10px] px-2 py-0.5 rounded bg-neutral-100">{ev.status}</span>
-                      <span>{new Date(ev.event_start_at || ev.start_date || ev.created_at).toLocaleDateString()}</span>
-                    </div>
-                    {ev.event_location && <div className="text-xs text-[#555B57]">📍 {ev.event_location}</div>}
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        if (window.confirm(`Delete event "${enT?.title || 'this event'}"?`)) {
-                          await supabase.from('articles').delete().eq('id', ev.id);
-                          await onRefresh();
-                        }
-                      }}
-                      className="text-red-600 text-xs hover:underline cursor-pointer font-bold flex items-center gap-1 pt-1"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" /> Remove
-                    </button>
-                  </div>
-                );
-              })}
-              {events.length === 0 && (
-                <p className="col-span-full text-xs text-[#555B57] py-6 text-center">
-                  No events scheduled. Use the form below to create one.
-                </p>
-              )}
-            </div>
-          </div>
-
-          <div className="w-full bg-white rounded-xl border border-[#E5E7E5] p-6 space-y-4 shadow-xs">
-            <h4 className="font-bold text-base text-[#000000]">Create Community Event</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-semibold mb-1">Event Title *</label>
-                <input
-                  value={eventTitle}
-                  onChange={(e) => {
-                    setEventTitle(e.target.value);
-                    setEventSlug(
-                      e.target.value
-                        .toLowerCase()
-                        .replace(/[^a-z0-9]+/g, '-')
-                        .replace(/(^-|-$)/g, '')
-                    );
-                  }}
-                  className="w-full px-3 py-2 rounded-lg border border-[#E5E7E5] text-sm text-black"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold mb-1">Event Slug</label>
-                <input
-                  value={eventSlug}
-                  onChange={(e) => setEventSlug(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-[#E5E7E5] text-sm font-mono text-black"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-semibold mb-1">Start Date &amp; Time</label>
-                <input
-                  type="datetime-local"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-[#E5E7E5] text-sm text-black"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold mb-1">Location</label>
-                <input
-                  value={eventLocation}
-                  onChange={(e) => setEventLocation(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-[#E5E7E5] text-sm text-black"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold mb-1">Event Summary</label>
-              <textarea
-                rows={2}
-                value={eventSummary}
-                onChange={(e) => setEventSummary(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-[#E5E7E5] text-sm text-black"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold mb-1">Event Details &amp; Agenda</label>
-              <textarea
-                rows={6}
-                value={eventBodyHtml}
-                onChange={(e) => setEventBodyHtml(e.target.value)}
-                placeholder="Write event details in normal language..."
-                className="w-full px-3 py-2 rounded-lg border border-[#E5E7E5] text-sm leading-relaxed text-black"
-              />
-            </div>
-
-            <button
-              onClick={handleSaveEvent}
-              disabled={saving}
-              className="px-6 py-2.5 rounded-lg bg-[#E6A500] hover:bg-[#d49700] disabled:opacity-50 text-black text-xs font-extrabold flex items-center gap-2 cursor-pointer shadow-xs transition"
-            >
-              {saving ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" /> Saving Event...
-                </>
-              ) : (
-                <>
-                  <Save className="w-4 h-4" /> Save Event &amp; Publish
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
   );
 }
 
@@ -2709,33 +2445,10 @@ export function NewsAndEventsModule({
  * Standalone page for News, Press Releases & Field Dispatches
  */
 export function NewsModule(
-  props: Omit<Parameters<typeof NewsAndEventsModule>[0], 'events'> & { events?: any[] }
+  props: Parameters<typeof NewsAndEventsModule>[0]
 ) {
-  return (
-    <NewsAndEventsModule
-      {...props}
-      events={props.events || []}
-      initialTab="news"
-      hideTabSwitcher={true}
-    />
-  );
+  return <NewsAndEventsModule {...props} />;
 }
 
-/**
- * Dedicated Events Module
- * Standalone page for Events & Community Gatherings
- */
-export function EventsModule(
-  props: Omit<Parameters<typeof NewsAndEventsModule>[0], 'articles'> & { articles?: any[] }
-) {
-  return (
-    <NewsAndEventsModule
-      {...props}
-      articles={props.articles || []}
-      initialTab="events"
-      hideTabSwitcher={true}
-    />
-  );
-}
 
 

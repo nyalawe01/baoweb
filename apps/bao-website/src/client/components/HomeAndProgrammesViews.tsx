@@ -960,7 +960,7 @@ export function HomeView({
                 <div className="flex items-center gap-2 flex-wrap">
                   <div className="flex items-center gap-1.5 ml-auto">
                     <button
-                      onClick={() => navigate('/news-events')}
+                      onClick={() => navigate('/news')}
                       className="bao-btn text-xs font-bold px-4 py-2 text-black cursor-pointer"
                     >
                       {lang === 'en' ? 'View All News & Stories' : 'Habari na Simulizi Zote'} →
