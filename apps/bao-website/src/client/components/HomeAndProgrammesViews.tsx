@@ -21,7 +21,6 @@ import {
   Image as ImageIcon,
   Quote,
   MessageSquareQuote,
-  RotateCw,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -161,7 +160,6 @@ export function HomeView({
   const partners = siteData.partners || [];
   const indicators = siteData.indicators || [];
   const media = siteData.media || [];
-  const [flippedCardId, setFlippedCardId] = useState<string | null>(null);
 
   // Real YouTube videos fetched from https://www.youtube.com/@babawatotoorganization
   const videos: { id: string; title: string; subtitle: string; published?: string }[] =
@@ -572,14 +570,11 @@ export function HomeView({
               (proj.project_translations || [])[0] ||
               {};
             const imgUrl = resolveMediaUrl(proj.featured_image_id || proj.featured_media_id, media);
-            const pillar = proj.thematic_pillar || proj.category || '';
             return {
               id: proj.id,
-              slug: tr.slug || proj.slug || proj.id,
-              title: tr.title || (lang === 'sw' ? 'Mradi wa Babawatoto' : 'Babawatoto Project'),
-              subtitle: tr.subtitle || pillar || (lang === 'sw' ? 'Mradi wa Jamii' : 'Community Initiative'),
-              category: pillar || (lang === 'sw' ? 'Programu Kuu' : 'Core Program'),
-              shortDescription: tr.summary || tr.short_description || tr.description || '',
+              slug: tr.slug || proj.id,
+              title: tr.title || '',
+              shortDescription: tr.summary || tr.short_description || '',
               imageUrl: imgUrl || '',
             };
           });
@@ -599,108 +594,51 @@ export function HomeView({
               {mappedCmsCards.map((card) => (
                 <div
                   key={card.id}
-                  className={`bao-flip-card h-[430px] sm:h-[450px] w-full cursor-pointer select-none group ${
-                    flippedCardId === card.id ? 'is-flipped' : ''
-                  }`}
+                  className="bao-flip-card h-[400px] w-full cursor-pointer"
                   tabIndex={0}
-                  role="button"
-                  aria-label={card.title}
-                  onClick={() => {
-                    setFlippedCardId((prev) => (prev === card.id ? null : card.id));
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      setFlippedCardId((prev) => (prev === card.id ? null : card.id));
-                    }
-                  }}
+                  onClick={() => navigate(`/projects/${card.slug}`)}
                 >
                   <div className="bao-flip-card-inner">
-                    {/* Front Face: Image + Floating Badge & Tap Hint + Permanent Dark Bottom Gradient with Title & Subtitle */}
-                    <div className="bao-flip-card-front bg-white border-2 border-[#E6A500] overflow-hidden shadow-none rounded-2xl relative">
+                    {/* Front Face (When NOT Hovered): Just the Image */}
+                    <div className="bao-flip-card-front bg-white border-2 border-[#E6A500] overflow-hidden shadow-none">
                       {card.imageUrl ? (
                         <img
                           src={card.imageUrl}
                           alt={card.title}
-                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                          width={400}
+                          height={400}
+                          loading="lazy"
+                          decoding="async"
+                          className="w-full h-full object-cover"
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center bg-[#F2F2F2]">
                           <ImageIcon className="w-12 h-12 text-black/40" />
                         </div>
                       )}
-
-                      {/* Top Badges & Tap hint */}
-                      <div className="absolute top-4 left-4 right-4 flex items-center justify-between z-10 pointer-events-none">
-                        <span className="px-3 py-1 bg-[#E6A500] text-black font-extrabold uppercase text-[11px] sm:text-xs tracking-wider rounded-md shadow-sm">
-                          {card.category}
-                        </span>
-                        <span className="px-2.5 py-1 bg-black/75 backdrop-blur-xs text-white text-[11px] font-bold rounded-full flex items-center gap-1.5 border border-white/20 shadow-sm">
-                          <RotateCw className="w-3 h-3 text-[#E6A500]" />
-                          <span>{lang === 'sw' ? 'Gusa kugeuza' : 'Tap to flip'}</span>
-                        </span>
-                      </div>
-
-                      {/* Bottom Gradient with Title & Subtitle */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent flex flex-col justify-end p-6 text-white pointer-events-none">
-                        <h3 className="text-xl sm:text-2xl font-black text-white leading-tight drop-shadow-sm">
-                          {card.title}
-                        </h3>
-                        {card.subtitle && (
-                          <p className="text-xs sm:text-sm text-white/90 font-medium line-clamp-1 mt-1 drop-shadow-xs">
-                            {card.subtitle}
-                          </p>
-                        )}
-                      </div>
                     </div>
 
-                    {/* Back Face (When Tapped or Hovered): Title, Subtitle, Divider, Short Description & Read More Button */}
-                    <div className="bao-flip-card-back bg-[#E6A500] border-2 border-black p-6 sm:p-8 flex flex-col justify-between text-left shadow-none rounded-2xl">
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <span className="px-3 py-1 bg-black text-white font-extrabold uppercase text-[11px] tracking-wider rounded-md">
-                            {card.category}
-                          </span>
-                          <span className="text-[11px] font-bold text-black/80 flex items-center gap-1">
-                            <RotateCw className="w-3 h-3 text-black" />
-                            <span>{lang === 'sw' ? 'Kugeuza' : 'Flip'}</span>
-                          </span>
-                        </div>
-
-                        <div>
-                          <h3 className="text-xl sm:text-2xl font-black text-black leading-snug">
-                            {card.title}
-                          </h3>
-                          {card.subtitle && (
-                            <p className="text-xs sm:text-sm font-bold text-black/80 mt-0.5">
-                              {card.subtitle}
-                            </p>
-                          )}
-                        </div>
-
-                        <div className="w-14 h-[2.5px] bg-black my-2" />
-
-                        <p className="text-sm sm:text-base text-black/95 leading-relaxed font-medium line-clamp-4">
-                          {card.shortDescription}
-                        </p>
-                      </div>
-
-                      <div className="pt-4 border-t border-black/15 flex items-center justify-between gap-3">
+                    {/* Back Face (When Hovered): Short Description + Read More Button */}
+                    <div className="bao-flip-card-back bg-[#E6A500] border-2 border-[#E6A500] p-8 flex flex-col items-center justify-center text-center space-y-5 shadow-none">
+                      <h3 className="text-[26px] font-extrabold text-black leading-snug">
+                        {card.title}
+                      </h3>
+                      <div className="w-16 h-[2px] bg-white mx-auto" />
+                      <p className="text-[18px] text-black leading-relaxed line-clamp-4">
+                        {card.shortDescription}
+                      </p>
+                      <div className="pt-2">
                         <button
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
                             navigate(`/projects/${card.slug}`);
                           }}
-                          className="bao-btn px-6 py-2.5 text-white bg-black hover:bg-neutral-900 font-extrabold text-sm sm:text-base inline-flex items-center gap-2 rounded-lg shadow-md transition"
+                          className="bao-btn px-7 py-3 text-black font-extrabold text-[18px] inline-flex items-center justify-center gap-2"
                         >
                           <span>{dict.common.readMore || 'Read More'}</span>
-                          <ArrowRight className="w-4 h-4 text-[#E6A500]" />
+                          <ArrowRight className="w-5 h-5 text-black" />
                         </button>
-
-                        <span className="text-[11px] font-bold text-black/75 hidden sm:inline">
-                          {lang === 'sw' ? 'Gusa kadi kurudi' : 'Tap to flip back'}
-                        </span>
                       </div>
                     </div>
                   </div>
@@ -1415,7 +1353,6 @@ export function ProgrammesView({
   const dict = UI_TRANSLATIONS[lang];
   const programmes = siteData.programmes || [];
   const media = siteData.media || [];
-  const [flippedCardId, setFlippedCardId] = useState<string | null>(null);
 
   if (slug) {
     const prog = programmes.find((p: any) =>
