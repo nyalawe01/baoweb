@@ -1,0 +1,6 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "express",
+  "entrypoint": "server.ts",
+  "buildCommand": "npm run build"
+}

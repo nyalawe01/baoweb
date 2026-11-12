@@ -2,6 +2,10 @@ import 'dotenv/config';
 import os from 'node:os';
 import path from 'node:path';
 import { existsSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 import express, { type Request, type Response, type NextFunction } from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
@@ -853,6 +857,7 @@ export function createCmsApp() {
   // 7. SERVE COMPILED REACT CMS SPA IN PRODUCTION
   // ---------------------------------------------------------------------------
   const candidateClientDists = [
+    path.resolve(__dirname, 'client'),
     path.resolve(process.cwd(), 'dist/client'),
     path.resolve(process.cwd(), 'apps/bao-cms/dist/client'),
     path.resolve(__dirname, 'dist/client'),
@@ -862,16 +867,21 @@ export function createCmsApp() {
     candidateClientDists.find((d) => existsSync(path.join(d, 'index.html'))) ||
     candidateClientDists[0];
 
-  if (existsSync(clientDistPath)) {
-    app.use(express.static(clientDistPath));
-    app.get('*', (req: Request, res: Response, next: NextFunction) => {
-      if (req.path.startsWith('/api/') || req.path.startsWith('/media/')) {
-        next();
-        return;
-      }
-      res.sendFile(path.join(clientDistPath, 'index.html'));
-    });
-  }
+  app.use(express.static(clientDistPath));
+  app.use('/cms', express.static(clientDistPath));
+
+  app.get('*', (req: Request, res: Response, next: NextFunction) => {
+    if (req.path.startsWith('/api/') || req.path.startsWith('/media/')) {
+      next();
+      return;
+    }
+    const indexHtml = path.join(clientDistPath, 'index.html');
+    if (existsSync(indexHtml)) {
+      res.sendFile(indexHtml);
+    } else {
+      res.status(200).send('Babawatoto Organization (BAO) CMS API is running.');
+    }
+  });
 
   return app;
 }

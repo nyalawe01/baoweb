@@ -423,7 +423,7 @@ ${urls.map((u) => `  <url><loc>${u}</loc><changefreq>weekly</changefreq></url>`)
 });
 
 async function startServer() {
-  const isProd = process.env.NODE_ENV === 'production';
+  const isProd = process.env.NODE_ENV === 'production' || !!process.env.VERCEL;
   const port = Number(process.env.PORT || 3000);
 
   const ngoJsonLd = JSON.stringify({
@@ -450,28 +450,33 @@ async function startServer() {
   });
 
   if (!isProd) {
-    const { createServer: createViteServer } = await import('vite');
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: 'custom',
-    });
-    app.use(vite.middlewares);
-    app.use('*', async (req, res) => {
-      try {
-        const url = req.originalUrl;
-        let template = fs.readFileSync(path.resolve(process.cwd(), 'index.html'), 'utf-8');
-        template = await vite.transformIndexHtml(url, template);
-        template = template.replace(
-          '<!--SEO_HEAD-->',
-          `<link rel="canonical" href="https://babawatoto.or.tz${url}" /><script type="application/ld+json">${ngoJsonLd}</script>`
-        );
-        res.status(200).set({ 'Content-Type': 'text/html' }).end(template);
-      } catch (e: any) {
-        res.status(500).end(e.message);
-      }
-    });
+    try {
+      const { createServer: createViteServer } = await import('vite');
+      const vite = await createViteServer({
+        server: { middlewareMode: true },
+        appType: 'custom',
+      });
+      app.use(vite.middlewares);
+      app.use('*', async (req, res) => {
+        try {
+          const url = req.originalUrl;
+          let template = fs.readFileSync(path.resolve(process.cwd(), 'index.html'), 'utf-8');
+          template = await vite.transformIndexHtml(url, template);
+          template = template.replace(
+            '<!--SEO_HEAD-->',
+            `<link rel="canonical" href="https://babawatoto.or.tz${url}" /><script type="application/ld+json">${ngoJsonLd}</script>`
+          );
+          res.status(200).set({ 'Content-Type': 'text/html' }).end(template);
+        } catch (e: any) {
+          res.status(500).end(e.message);
+        }
+      });
+    } catch (viteErr) {
+      console.warn('[bao-website] Vite dev middleware unavailable, serving static/API mode:', viteErr);
+    }
   } else {
     const candidateClientDists = [
+      path.resolve(__dirname, 'client'),
       path.resolve(process.cwd(), 'dist/client'),
       path.resolve(process.cwd(), 'apps/bao-website/dist/client'),
       path.resolve(__dirname, 'dist/client'),
@@ -505,7 +510,9 @@ async function startServer() {
   }
 }
 
-startServer();
+startServer().catch((err) => {
+  console.error('[bao-website] Failed to initialize server:', err);
+});
 
 export default app;
 

@@ -24,7 +24,19 @@
   },
   "rewrites": [
     {
+      "source": "/api/v1",
+      "destination": {
+        "service": "bao-cms"
+      }
+    },
+    {
       "source": "/api/v1/(.*)",
+      "destination": {
+        "service": "bao-cms"
+      }
+    },
+    {
+      "source": "/cms",
       "destination": {
         "service": "bao-cms"
       }
