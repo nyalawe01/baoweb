@@ -56,6 +56,10 @@ import {
   DEFAULT_PRIORITY_PROJECTS,
 } from './HomeAndProgrammesViews.js';
 import { YouTubeEmbed } from './YouTubeEmbed.js';
+import { ContactCard } from './ui/contact-card.js';
+import { Input } from './ui/input.js';
+import { Label } from './ui/label.js';
+import { Textarea } from './ui/textarea.js';
 /**
  * Animated Counter Component for Impact Metrics
  */
@@ -3661,9 +3665,13 @@ export function ContactView({ lang, siteData, navigate }: { lang: LanguageCode; 
   const [phone, setPhone] = useState('');
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [statusMsg, setStatusMsg] = useState<{ text: string; isErr?: boolean } | null>(null);
+
   const handleContactSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
+    setStatusMsg(null);
     try {
       const res = await fetch('/api/public/contact', {
         method: 'POST',
@@ -3679,7 +3687,7 @@ export function ContactView({ lang, siteData, navigate }: { lang: LanguageCode; 
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to send message');
-      setStatusMsg({ text: data.message });
+      setStatusMsg({ text: data.message || 'Thank you! Your message has been sent to info@babawatoto.or.tz.' });
       setFullName('');
       setEmail('');
       setPhone('');
@@ -3687,6 +3695,8 @@ export function ContactView({ lang, siteData, navigate }: { lang: LanguageCode; 
       setMessage('');
     } catch (err: any) {
       setStatusMsg({ text: err.message, isErr: true });
+    } finally {
+      setIsSubmitting(false);
     }
   };
   return (
@@ -3722,227 +3732,146 @@ export function ContactView({ lang, siteData, navigate }: { lang: LanguageCode; 
         </div>
       </section>
       <div className="max-w-7xl mx-auto px-4 space-y-12">
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-        <div className="lg:col-span-5 space-y-6">
-          <div className="bg-white border border-gray-200 shadow-none p-8 space-y-6 text-[18px]">
-            <h2 className="text-[28px] font-extrabold text-black">Our Office Details</h2>
-
-            {/* Physical / Postal Addresses */}
-            <div className="flex items-start gap-4">
-              <MapPin className="w-6 h-6 text-[#E6A500] shrink-0 mt-1" />
-              <div className="space-y-2 break-normal hyphens-none w-full">
-                <div className="font-extrabold text-[20px] text-black">
-                  Physical &amp; Postal Address
-                </div>
-                {addressesList.length > 0 ? (
-                  <div className="space-y-3 pt-1">
-                    {addressesList.map((ad, idx) => (
-                      <div key={idx} className="space-y-0.5">
-                        {ad.title && (
-                          <div className="font-bold text-black text-sm uppercase tracking-wide">
-                            {ad.title}
-                          </div>
-                        )}
-                        <p className="leading-relaxed text-black text-base font-medium">
-                          {ad.address}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-black mt-1 space-y-1 text-base font-medium leading-relaxed">
-                    <p className="font-bold text-black text-sm uppercase tracking-wide">
-                      Babawatoto Centre Head Office
-                    </p>
-                    <p className="leading-snug">
-                      <span className="inline-block whitespace-nowrap">St. Anne Marie Street,</span>{' '}
-                      <span className="inline-block whitespace-nowrap">House No. 27</span>
-                    </p>
-                    <p className="leading-snug">
-                      <span className="inline-block whitespace-nowrap">Morogoro Road,</span>{' '}
-                      <span className="inline-block whitespace-nowrap">Mbezi Kwa Msuguri</span>
-                    </p>
-                    <p className="leading-snug text-gray-700">
-                      <span className="inline-block whitespace-nowrap">{contact.po_box || contact.postal_address || 'P.O. Box 8293'},</span>{' '}
-                      <span className="inline-block whitespace-nowrap">{contact.city || 'Dar es Salaam'}, {contact.country || 'Tanzania'}</span>
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Official Emails (Multiple Support) */}
-            <div className="flex items-start gap-4">
-              <Mail className="w-6 h-6 text-[#E6A500] shrink-0 mt-1" />
-              <div className="w-full">
-                <div className="font-extrabold text-[20px] text-black">Official Email</div>
-                <div className="space-y-2 mt-1.5">
-                  {emailsList.map((em, idx) => (
-                    <div key={idx} className="flex flex-wrap items-center gap-2">
-                      {em.title && (
-                        <span className="text-xs font-bold uppercase bg-blue-50 text-blue-900 border border-blue-200 px-2 py-0.5 rounded">
-                          {em.title}:
-                        </span>
-                      )}
-                      <a
-                        href={`mailto:${em.email}`}
-                        className="text-black font-semibold hover:text-[#E6A500] transition"
-                      >
-                        {em.email}
-                      </a>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Telephones (Multiple Support) */}
-            <div className="flex items-start gap-4">
-              <Phone className="w-6 h-6 text-[#E6A500] shrink-0 mt-1" />
-              <div className="w-full">
-                <div className="font-extrabold text-[20px] text-black">Telephone</div>
-                <div className="space-y-2 mt-1.5">
-                  {phonesList.map((p, idx) => (
-                    <div key={idx} className="flex flex-wrap items-center gap-2">
-                      {p.title && (
-                        <span className="text-xs font-bold uppercase bg-amber-50 text-amber-900 border border-amber-200 px-2 py-0.5 rounded">
-                          {p.title}:
-                        </span>
-                      )}
-                      <a
-                        href={`tel:${p.number.replace(/\s+/g, '')}`}
-                        className="text-black font-semibold hover:text-[#E6A500] transition"
-                      >
-                        {p.number}
-                      </a>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Working Hours */}
-            <div className="flex items-start gap-4">
-              <Clock className="w-6 h-6 text-[#E6A500] shrink-0 mt-1" />
-              <div>
-                <div className="font-extrabold text-[20px] text-black">Office Hours</div>
-                <div className="text-black mt-1">
-                  {contactSettings.office_hours || contact.working_hours_en || contact.office_hours || 'Monday – Friday: 8:00 AM – 5:00 PM (EAT)'}
-                </div>
-              </div>
-            </div>
-
-            {/* Official Links (Multiple Support with Link Title & Link URL) */}
-            {linksList.length > 0 && (
-              <div className="flex items-start gap-4 pt-4 border-t border-gray-100">
-                <Globe className="w-6 h-6 text-[#E6A500] shrink-0 mt-1" />
-                <div className="w-full space-y-2">
-                  <div className="font-extrabold text-[20px] text-black">Official Links &amp; Resources</div>
-                  <div className="space-y-2 mt-1">
-                    {linksList.map((lnk, idx) => (
-                      <div key={idx}>
-                        <a
-                          href={lnk.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 font-bold text-black hover:text-[#E6A500] transition text-base"
-                        >
-                          <span>{lnk.title || lnk.url}</span>
-                          <ExternalLink className="w-3.5 h-3.5 text-gray-500" />
-                        </a>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+        <ContactCard
+          title={pageTitle || "Contact With Us"}
+          description={leadDesc || "If you have any questions regarding our Services or need help, please fill out the form here. We do our best to respond within 1 business day."}
+          contactInfo={[
+            {
+              icon: Mail,
+              label: 'Email',
+              value: emailsList[0]?.email || contact.email || 'info@babawatoto.or.tz',
+            },
+            {
+              icon: Phone,
+              label: 'Phone',
+              value: phonesList[0]?.number || contact.phone || '+255 651 136502 / +255 651 136504',
+            },
+            {
+              icon: MapPin,
+              label: 'Address',
+              value: addressesList[0]?.address || 'St. Anne Marie Street, House No. 27, Morogoro Road, Mbezi Kwa Msuguri, Dar es Salaam, Tanzania',
+              className: 'col-span-2',
+            },
+            {
+              icon: Clock,
+              label: 'Office Hours',
+              value: contactSettings.office_hours || contact.working_hours_en || contact.office_hours || 'Monday – Friday: 8:00 AM – 5:00 PM (EAT)',
+            },
+          ]}
+        >
+          <form onSubmit={handleContactSubmit} className="w-full space-y-4">
+            {statusMsg && (
+              <div
+                className={`p-3 text-sm font-bold rounded-lg border ${
+                  statusMsg.isErr ? 'bg-red-50 text-red-700 border-red-200' : 'bg-[#E6A500]/20 text-black border-[#E6A500]'
+                }`}
+              >
+                {statusMsg.text}
               </div>
             )}
-          </div>
-        </div>
-        <div className="lg:col-span-7 bg-white border border-gray-200 shadow-none p-8 space-y-6">
-          <h2 className="font-extrabold text-[30px] text-black">Send Us an Inquiry</h2>
-          {statusMsg && (
-            <div
-              className={`p-4 text-[18px] font-bold ${statusMsg.isErr ? 'bg-red-50 text-red-700' : 'bg-[#E6A500]/20 text-black'
-                }`}
-            >
-              {statusMsg.text}
-            </div>
-          )}
-          <form onSubmit={handleContactSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-              <div>
-                <label className="block text-[17px] font-extrabold text-black mb-1.5">
-                  Full Name <span className="text-red-600">*</span>
-                </label>
-                <input
-                  required
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  placeholder="e.g. Juma Hamisi"
-                  className="w-full px-4 py-3.5 border-2 border-gray-400 rounded-xl bg-white text-[18px] text-black placeholder:text-gray-500 focus:border-black focus:ring-2 focus:ring-[#E6A500]/30 outline-hidden transition shadow-xs"
-                />
-              </div>
-              <div>
-                <label className="block text-[17px] font-extrabold text-black mb-1.5">
-                  Email Address <span className="text-red-600">*</span>
-                </label>
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="e.g. juma@example.com"
-                  className="w-full px-4 py-3.5 border-2 border-gray-400 rounded-xl bg-white text-[18px] text-black placeholder:text-gray-500 focus:border-black focus:ring-2 focus:ring-[#E6A500]/30 outline-hidden transition shadow-xs"
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-              <div>
-                <label className="block text-[17px] font-extrabold text-black mb-1.5">
-                  Phone Number (Optional)
-                </label>
-                <input
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="e.g. +255 784 712095"
-                  className="w-full px-4 py-3.5 border-2 border-gray-400 rounded-xl bg-white text-[18px] text-black placeholder:text-gray-500 focus:border-black focus:ring-2 focus:ring-[#E6A500]/30 outline-hidden transition shadow-xs"
-                />
-              </div>
-              <div>
-                <label className="block text-[17px] font-extrabold text-black mb-1.5">
-                  Subject <span className="text-red-600">*</span>
-                </label>
-                <input
-                  required
-                  value={subject}
-                  onChange={(e) => setSubject(e.target.value)}
-                  placeholder="e.g. Child Protection Partnership"
-                  className="w-full px-4 py-3.5 border-2 border-gray-400 rounded-xl bg-white text-[18px] text-black placeholder:text-gray-500 focus:border-black focus:ring-2 focus:ring-[#E6A500]/30 outline-hidden transition shadow-xs"
-                />
-              </div>
-            </div>
-            <div>
-              <label className="block text-[17px] font-extrabold text-black mb-1.5">
-                Your Message <span className="text-red-600">*</span>
-              </label>
-              <textarea
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="contact-name">Name</Label>
+              <Input
+                id="contact-name"
                 required
-                rows={5}
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                placeholder="Write your message, partnership inquiry, or safeguarding question..."
-                className="w-full px-4 py-3.5 border-2 border-gray-400 rounded-xl bg-white text-[18px] text-black placeholder:text-gray-500 focus:border-black focus:ring-2 focus:ring-[#E6A500]/30 outline-hidden transition shadow-xs"
+                type="text"
+                placeholder="Your full name"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
               />
             </div>
-            <button
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="contact-email">Email</Label>
+              <Input
+                id="contact-email"
+                required
+                type="email"
+                placeholder="name@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="contact-phone">Phone</Label>
+              <Input
+                id="contact-phone"
+                type="tel"
+                placeholder="+255..."
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="contact-subject">Subject</Label>
+              <Input
+                id="contact-subject"
+                required
+                type="text"
+                placeholder="How can we help?"
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="contact-message">Message</Label>
+              <Textarea
+                id="contact-message"
+                required
+                placeholder="Write your message here..."
+                rows={4}
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+              />
+            </div>
+            <Button
               type="submit"
-              className="bao-btn px-8 py-4 text-black font-extrabold text-[18px] cursor-pointer"
+              disabled={isSubmitting}
+              className="w-full bg-[#E6A500] hover:bg-black text-black hover:text-white font-bold transition-colors cursor-pointer"
             >
-              {dict.common.submit}
-            </button>
+              {isSubmitting ? 'Sending...' : dict.common.submit}
+            </Button>
           </form>
-        </div>
-      </div>
+        </ContactCard>
+
+        {(addressesList.length > 1 || linksList.length > 0 || phonesList.length > 1) && (
+          <div className="bg-white border border-gray-200 p-6 md:p-8 space-y-6">
+            <h3 className="text-xl font-black text-black">Additional Office Branches & Official Links</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {addressesList.slice(1).map((ad, idx) => (
+                <div key={idx} className="space-y-1">
+                  <div className="font-bold text-black text-sm uppercase tracking-wide flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-[#E6A500]" />
+                    {ad.title || `Branch ${idx + 2}`}
+                  </div>
+                  <p className="text-sm text-gray-700">{ad.address}</p>
+                </div>
+              ))}
+              {phonesList.slice(1).map((p, idx) => (
+                <div key={idx} className="space-y-1">
+                  <div className="font-bold text-black text-sm uppercase tracking-wide flex items-center gap-2">
+                    <Phone className="w-4 h-4 text-[#E6A500]" />
+                    {p.title || 'Direct Line'}
+                  </div>
+                  <a href={`tel:${p.number.replace(/\s+/g, '')}`} className="text-sm font-semibold text-black hover:text-[#E6A500]">
+                    {p.number}
+                  </a>
+                </div>
+              ))}
+              {linksList.map((lnk, idx) => (
+                <div key={idx} className="space-y-1">
+                  <div className="font-bold text-black text-sm uppercase tracking-wide flex items-center gap-2">
+                    <Globe className="w-4 h-4 text-[#E6A500]" />
+                    Official Link
+                  </div>
+                  <a href={lnk.url} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold text-black hover:text-[#E6A500] inline-flex items-center gap-1">
+                    <span>{lnk.title || lnk.url}</span>
+                    <ExternalLink className="w-3.5 h-3.5 text-gray-500" />
+                  </a>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       {/* Commemorative Contact Section */}
       <SectionSeparator label="Commemorative Partnership & Community Open Door" />
       <section className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center bg-white border border-gray-200 shadow-none p-8 lg:p-12">

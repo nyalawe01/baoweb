@@ -3,6 +3,23 @@
   "description": "Babawatoto Centre for Children and Youth Trust (BAO) empowers street-connected children, youth, and families across Tanzania.",
   "url": "https://babawatoto.or.tz",
   "documentation": "https://babawatoto.or.tz/llms.txt",
-  "version": "1.0.0"
+  "version": "1.0.0",
+  "entries": [
+    {
+      "id": "llms-txt",
+      "name": "Babawatoto AI Context",
+      "description": "Comprehensive structured markdown context of Babawatoto Organization initiatives, governance, and contact information.",
+      "type": "documentation",
+      "uri": "https://babawatoto.or.tz/llms.txt",
+      "format": "text/markdown"
+    },
+    {
+      "id": "site-data-api",
+      "name": "Public Site Data API",
+      "description": "JSON API endpoint serving published programmes, project indicators, team members, and official contact channels.",
+      "type": "api",
+      "uri": "https://babawatoto.or.tz/api/public/site-data",
+      "format": "application/json"
+    }
+  ]
 }
-

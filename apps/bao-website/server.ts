@@ -17,6 +17,7 @@ const corsFn: any = (cors as any)?.default || cors;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+import nodemailer from 'nodemailer';
 import {
   contactSubmissionSchema,
   volunteerSubmissionSchema,
@@ -305,7 +306,7 @@ export async function getPublicSiteData(force = false) {
 
 // Agentic Resource Discovery & LLM endpoints
 app.get('/.well-known/ard.json', (_req: Request, res: Response) => {
-  res.setHeader('Content-Type', 'application/json');
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
   res.setHeader('Cache-Control', 'public, max-age=86400');
   res.json({
     name: 'Babawatoto Organization',
@@ -313,6 +314,24 @@ app.get('/.well-known/ard.json', (_req: Request, res: Response) => {
     url: 'https://babawatoto.or.tz',
     documentation: 'https://babawatoto.or.tz/llms.txt',
     version: '1.0.0',
+    entries: [
+      {
+        id: 'llms-txt',
+        name: 'Babawatoto AI Context',
+        description: 'Comprehensive structured markdown context of Babawatoto Organization initiatives, governance, and contact information.',
+        type: 'documentation',
+        uri: 'https://babawatoto.or.tz/llms.txt',
+        format: 'text/markdown',
+      },
+      {
+        id: 'site-data-api',
+        name: 'Public Site Data API',
+        description: 'JSON API endpoint serving published programmes, project indicators, team members, and official contact channels.',
+        type: 'api',
+        uri: 'https://babawatoto.or.tz/api/public/site-data',
+        format: 'application/json',
+      },
+    ],
   });
 });
 
@@ -356,6 +375,108 @@ const formLimiter = (rateLimitFn as any)({
   message: { error: 'Too many submissions from this IP, please try again later.' },
 });
 
+// Email dispatch for contact inquiries to info@babawatoto.or.tz
+async function sendContactNotificationEmail(data: {
+  fullName: string;
+  email: string;
+  phone?: string | null;
+  subject?: string;
+  message: string;
+  organization?: string;
+}) {
+  const recipient = process.env.CONTACT_NOTIFICATION_EMAIL || 'info@babawatoto.or.tz';
+  const mailSubject = `[Website Inquiry] ${data.subject || 'Message from ' + data.fullName}`;
+
+  const textBody = `
+New inquiry submitted via Babawatoto Organization website:
+
+From: ${data.fullName}
+Email: ${data.email}
+Phone: ${data.phone || 'Not provided'}
+Organization: ${data.organization || 'Not provided'}
+Subject: ${data.subject || 'General Inquiry'}
+
+Message:
+${data.message}
+
+---
+Babawatoto Centre for Children & Youth Trust (BAO)
+Email: info@babawatoto.or.tz
+Website: https://babawatoto.or.tz
+Received at: ${new Date().toISOString()}
+  `.trim();
+
+  const htmlBody = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 2px solid #E6A500; border-radius: 8px; overflow: hidden;">
+      <div style="background-color: #E6A500; color: #000; padding: 20px; text-align: center;">
+        <h2 style="margin: 0; font-size: 22px; font-weight: 800;">Babawatoto Organization (BAO)</h2>
+        <p style="margin: 5px 0 0 0; font-size: 13px; font-weight: bold; text-transform: uppercase;">New Website Contact Inquiry</p>
+      </div>
+      <div style="padding: 24px; background-color: #fff; color: #111;">
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+          <tr>
+            <td style="padding: 8px 0; font-weight: bold; width: 130px; color: #555;">Sender Name:</td>
+            <td style="padding: 8px 0; font-weight: bold; color: #000;">${data.fullName}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; font-weight: bold; color: #555;">Email Address:</td>
+            <td style="padding: 8px 0;"><a href="mailto:${data.email}" style="color: #000; font-weight: bold;">${data.email}</a></td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; font-weight: bold; color: #555;">Phone:</td>
+            <td style="padding: 8px 0; color: #000;">${data.phone || 'Not provided'}</td>
+          </tr>
+          ${data.organization ? `
+          <tr>
+            <td style="padding: 8px 0; font-weight: bold; color: #555;">Organization:</td>
+            <td style="padding: 8px 0; color: #000;">${data.organization}</td>
+          </tr>` : ''}
+          <tr>
+            <td style="padding: 8px 0; font-weight: bold; color: #555;">Subject:</td>
+            <td style="padding: 8px 0; color: #000;">${data.subject || 'General Inquiry'}</td>
+          </tr>
+        </table>
+        <div style="background-color: #fafafa; border-left: 4px solid #E6A500; padding: 16px; border-radius: 4px;">
+          <h4 style="margin: 0 0 10px 0; font-size: 14px; color: #333;">Message Content:</h4>
+          <p style="margin: 0; line-height: 1.6; white-space: pre-wrap; font-size: 14px;">${data.message}</p>
+        </div>
+      </div>
+      <div style="background-color: #000; color: #fff; padding: 12px; text-align: center; font-size: 11px;">
+        Babawatoto Centre for Children and Youth Trust · Dar es Salaam, Tanzania · info@babawatoto.or.tz
+      </div>
+    </div>
+  `;
+
+  const smtpHost = process.env.SMTP_HOST || process.env.MAIL_HOST;
+  const smtpPort = Number(process.env.SMTP_PORT || process.env.MAIL_PORT || 587);
+  const smtpUser = process.env.SMTP_USER || process.env.MAIL_USER;
+  const smtpPass = process.env.SMTP_PASS || process.env.MAIL_PASS;
+
+  if (smtpHost && smtpUser && smtpPass) {
+    try {
+      const transporter = nodemailer.createTransport({
+        host: smtpHost,
+        port: smtpPort,
+        secure: smtpPort === 465,
+        auth: { user: smtpUser, pass: smtpPass },
+      });
+      await transporter.sendMail({
+        from: `"${data.fullName} via BAO Website" <${smtpUser}>`,
+        to: recipient,
+        replyTo: data.email,
+        subject: mailSubject,
+        text: textBody,
+        html: htmlBody,
+      });
+      console.log(`[Email] Successfully delivered inquiry to ${recipient}`);
+    } catch (mailErr) {
+      console.error('[Email] Failed to dispatch email via SMTP:', mailErr);
+    }
+  } else {
+    console.log(`[Email] Notification prepared for ${recipient}:`, mailSubject);
+  }
+}
+
 // Contact form submission
 app.post('/api/public/contact', formLimiter, async (req: Request, res: Response) => {
   const parsed = contactSubmissionSchema.safeParse(req.body);
@@ -382,6 +503,16 @@ app.post('/api/public/contact', formLimiter, async (req: Request, res: Response)
     res.status(500).json({ error: error.message });
     return;
   }
+
+  // Asynchronously dispatch email notification to info@babawatoto.or.tz
+  sendContactNotificationEmail({
+    fullName: parsed.data.full_name,
+    email: parsed.data.email,
+    phone: parsed.data.phone,
+    subject: parsed.data.subject,
+    message: parsed.data.message,
+    organization: parsed.data.organization,
+  }).catch((err) => console.error('[bao-website] Email background error:', err));
 
   res.status(201).json({ success: true, message: 'Inquiry received by Babawatoto Organization.' });
 });

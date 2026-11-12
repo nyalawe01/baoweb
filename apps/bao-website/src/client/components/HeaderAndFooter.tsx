@@ -247,15 +247,18 @@ export function Header({
           onClick={() => navigate('/')}
           className="flex items-center gap-3 text-left focus:outline-none cursor-pointer"
         >
-          <img
-            src="/logo.png"
-            alt="Babawatoto Organization Logo"
-            width={48}
-            height={48}
-            loading="eager"
-            fetchPriority="high"
-            className="w-12 h-12 object-contain bg-white"
-          />
+          <picture>
+            <source srcSet="/logo.webp" type="image/webp" />
+            <img
+              src="/logo.png"
+              alt="Babawatoto Organization Logo"
+              width={48}
+              height={48}
+              loading="eager"
+              fetchPriority="high"
+              className="w-12 h-12 object-contain bg-white"
+            />
+          </picture>
           <div>
             <span className="block font-extrabold text-lg tracking-tight text-black">
               BABAWATOTO
@@ -623,15 +626,18 @@ export function Footer({
               className="focus:outline-none"
               aria-label="Babawatoto Organization Home"
             >
-              <img
-                src="/logo.png"
-                alt="Babawatoto Organization Logo"
-                width={144}
-                height={144}
-                loading="lazy"
-                decoding="async"
-                className="w-36 h-36 bg-white p-3 object-contain"
-              />
+              <picture>
+                <source srcSet="/logo.webp" type="image/webp" />
+                <img
+                  src="/logo.png"
+                  alt="Babawatoto Organization Logo"
+                  width={144}
+                  height={144}
+                  loading="lazy"
+                  decoding="async"
+                  className="w-36 h-36 bg-white p-3 object-contain"
+                />
+              </picture>
             </button>
           </div>
 
