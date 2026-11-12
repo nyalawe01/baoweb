@@ -40,7 +40,7 @@ export function Header({
   projects = [],
 }: {
   lang: LanguageCode;
-  setLang: (l: LanguageCode) => void;
+  setLang?: (l: LanguageCode) => void;
   currentPath: string;
   navigate: (path: string) => void;
   settings: Record<string, any>;
@@ -194,41 +194,18 @@ export function Header({
             <span className="truncate">{contact.email_primary || 'info@babawatoto.or.tz'}</span>
           </a>
 
-          {/* Far Right: Language Switcher + Social Media Icons */}
-          <div className="flex items-center gap-3 shrink-0">
-            {/* Language Toggle */}
-            <div className="flex items-center gap-1 bg-black/10 p-0.5 rounded-xs text-[10px] font-extrabold">
-              <button
-                onClick={() => setLang('en')}
-                className={`px-1.5 py-0.5 rounded-xs transition cursor-pointer ${
-                  lang === 'en' ? 'bg-black text-white' : 'text-black hover:bg-black/10'
-                }`}
-                title="Switch to English"
-              >
-                EN
-              </button>
-              <button
-                onClick={() => setLang('sw')}
-                className={`px-1.5 py-0.5 rounded-xs transition cursor-pointer ${
-                  lang === 'sw' ? 'bg-black text-white' : 'text-black hover:bg-black/10'
-                }`}
-                title="Badili kuwa Kiswahili"
-              >
-                SW
-              </button>
-            </div>
-
-            <div className="flex items-center gap-1.5 sm:gap-2">
-              <a
-                href={instagramUrl}
-                target="_blank"
-                rel="noreferrer"
-                aria-label="Instagram"
-                className="flex items-center gap-1.5 text-black hover:bg-[#F2F2F2] px-1.5 py-0.5 rounded-xs font-bold transition"
-              >
-                <Instagram className="w-3.5 h-3.5 text-black" />
-                <span className="hidden md:inline text-[11px] font-bold">Instagram</span>
-              </a>
+          {/* Far Right: Social Media Icons */}
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            <a
+              href={instagramUrl}
+              target="_blank"
+              rel="noreferrer"
+              aria-label="Instagram"
+              className="flex items-center gap-1.5 text-black hover:bg-[#F2F2F2] px-1.5 py-0.5 rounded-xs font-bold transition"
+            >
+              <Instagram className="w-3.5 h-3.5 text-black" />
+              <span className="hidden md:inline text-[11px] font-bold">Instagram</span>
+            </a>
               <a
                 href={facebookUrl}
                 target="_blank"
@@ -262,7 +239,6 @@ export function Header({
             </div>
           </div>
         </div>
-      </div>
 
       {/* Main Navigation Bar */}
       <div className="max-w-7xl mx-auto px-4 h-20 flex items-center justify-between bg-white">
@@ -485,31 +461,6 @@ export function Header({
       {/* Mobile Drawer */}
       {mobileOpen && (
         <div className="lg:hidden bg-white border-t border-gray-200 px-4 py-4 space-y-4 max-h-[85vh] overflow-y-auto">
-          {/* Mobile Language Switcher */}
-          <div className="flex items-center justify-between pb-3 border-b border-gray-200">
-            <span className="text-xs font-bold text-gray-700 uppercase tracking-wider">
-              {lang === 'en' ? 'Select Language' : 'Chagua Lugha'}
-            </span>
-            <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-md">
-              <button
-                onClick={() => setLang('en')}
-                className={`px-3 py-1 rounded text-xs font-bold transition cursor-pointer ${
-                  lang === 'en' ? 'bg-[#E6A500] text-black shadow-xs' : 'text-gray-600 hover:text-black'
-                }`}
-              >
-                English
-              </button>
-              <button
-                onClick={() => setLang('sw')}
-                className={`px-3 py-1 rounded text-xs font-bold transition cursor-pointer ${
-                  lang === 'sw' ? 'bg-[#E6A500] text-black shadow-xs' : 'text-gray-600 hover:text-black'
-                }`}
-              >
-                Kiswahili
-              </button>
-            </div>
-          </div>
-
           <div>
             <div className="text-xs font-extrabold uppercase text-black bg-[#E6A500] px-2 py-1 mb-1">
               Who we are
