@@ -24,6 +24,30 @@
   },
   "rewrites": [
     {
+      "source": "/(.*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "cms\\..*"
+        }
+      ],
+      "destination": {
+        "service": "bao-cms"
+      }
+    },
+    {
+      "source": "/(.*)",
+      "has": [
+        {
+          "type": "host",
+          "value": ".*-cms.*"
+        }
+      ],
+      "destination": {
+        "service": "bao-cms"
+      }
+    },
+    {
       "source": "/cms/assets/(.*)",
       "destination": {
         "service": "bao-cms"

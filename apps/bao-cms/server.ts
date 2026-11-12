@@ -910,8 +910,18 @@ export function createCmsApp() {
       return;
     }
     try {
-      if (indexHtml && existsSync(indexHtml)) {
-        const html = readFileSync(indexHtml, 'utf-8');
+      let targetHtml = indexHtml;
+      if (!targetHtml || !existsSync(targetHtml)) {
+        for (const dir of candidateClientDists) {
+          const cand = path.join(dir, 'index.html');
+          if (existsSync(cand)) {
+            targetHtml = cand;
+            break;
+          }
+        }
+      }
+      if (targetHtml && existsSync(targetHtml)) {
+        const html = readFileSync(targetHtml, 'utf-8');
         res.setHeader('Content-Type', 'text/html; charset=utf-8');
         res.send(html);
         return;

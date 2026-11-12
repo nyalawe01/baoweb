@@ -7,8 +7,10 @@
   "scripts": {
     "dev": "tsx watch server.ts",
     "prebuild": "npm --prefix ../../packages/shared run build",
-    "build": "vite build && tsc -p tsconfig.server.json",
-    "postbuild": "node -e \"const fs=require('fs'); if(fs.existsSync('dist/client')) fs.cpSync('dist/client', 'dist', {recursive:true});\"",
+    "build:client": "vite build",
+    "build:server": "tsc -p tsconfig.server.json",
+    "build": "npm run build:client && npm run build:server",
+    "postbuild": "node -e \"const fs=require('fs'); if(fs.existsSync('dist/client')) fs.cpSync('dist/client', 'dist', {recursive:true}); fs.writeFileSync('dist/package.json', JSON.stringify({type:'module',main:'server.js'},null,2)); if(fs.existsSync('dist/server.js')) fs.copyFileSync('dist/server.js', 'dist/server.mjs');\"",
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit"
   },
