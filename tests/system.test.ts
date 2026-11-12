@@ -152,6 +152,9 @@ describe('Babawatoto Organization (BAO) Shared Security, Storage & Schema Verifi
     const uploadUnauth = await request(cmsApp).post('/api/v1/media/upload');
     expect(uploadUnauth.status).toBe(401);
 
+    const deleteProjectUnauth = await request(cmsApp).delete('/api/v1/projects/00000000-0000-0000-0000-000000000000');
+    expect(deleteProjectUnauth.status).toBe(401);
+
     // Public Website health, robots.txt, and contact form validation
     const healthRes = await request(websiteApp).get('/api/health');
     expect(healthRes.status).toBe(200);

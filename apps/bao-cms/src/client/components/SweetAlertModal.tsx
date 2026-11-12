@@ -75,6 +75,15 @@ export function SweetAlertModal({
 
         {!isLoading && (
           <div className="flex flex-col sm:flex-row items-center justify-center gap-2.5 pt-2">
+            {(alert.showCancel || Boolean(alert.onConfirm)) && (
+              <button
+                type="button"
+                onClick={onClose}
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold text-xs transition shadow-xs cursor-pointer order-2 sm:order-1"
+              >
+                Cancel
+              </button>
+            )}
             {alert.websiteUrl && (
               <a
                 href={alert.websiteUrl}
@@ -91,9 +100,13 @@ export function SweetAlertModal({
                 if (alert.onConfirm) alert.onConfirm();
                 onClose();
               }}
-              className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-[#E6A500] hover:bg-[#d49700] text-black font-extrabold text-xs transition shadow-xs cursor-pointer"
+              className={`w-full sm:w-auto px-6 py-2.5 rounded-xl text-xs font-extrabold transition shadow-xs cursor-pointer order-1 sm:order-2 ${
+                alert.type === 'warning' || alert.type === 'error'
+                  ? 'bg-rose-600 hover:bg-rose-700 text-white'
+                  : 'bg-[#E6A500] hover:bg-[#d49700] text-black'
+              }`}
             >
-              {alert.confirmText || 'Done / Continue'}
+              {alert.confirmText || (alert.onConfirm ? 'Confirm' : 'Done / Continue')}
             </button>
           </div>
         )}

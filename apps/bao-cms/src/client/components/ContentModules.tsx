@@ -645,6 +645,7 @@ export function ProjectsModule({
   const [featuredImageId, setFeaturedImageId] = useState<string>('');
   const [uploadingImage, setUploadingImage] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [projectStatus, setProjectStatus] = useState<'active' | 'completed' | 'upcoming'>('active');
   const [status, setStatus] = useState<PublicationStatus>('published');
@@ -844,6 +845,102 @@ export function ProjectsModule({
     }
   };
 
+  const handleDeleteProject = (id: string, title?: string, slug?: string) => {
+    const displayTitle = title || translations.en.title || 'this project';
+    const executeDelete = async () => {
+      setDeletingId(id);
+      showAlert?.({
+        type: 'loading',
+        title: 'Deleting Project...',
+        message: `Permanently removing "${displayTitle}" and related data from the database...`,
+      });
+      try {
+        // 1. Try backend endpoint first with JWT auth
+        let deletedViaApi = false;
+        try {
+          const { data: sessionData } = await supabase.auth.getSession();
+          const token = sessionData.session?.access_token;
+          if (token) {
+            const res = await fetch(`/api/v1/projects/${id}`, {
+              method: 'DELETE',
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            if (res.ok) {
+              deletedViaApi = true;
+            }
+          }
+        } catch {
+          // fallback to client Supabase
+        }
+
+        // 2. Direct Supabase deletion fallback
+        if (!deletedViaApi) {
+          await supabase.from('project_translations').delete().eq('project_id', id);
+          await supabase.from('project_activities').delete().eq('project_id', id);
+          const { error } = await supabase.from('projects').delete().eq('id', id);
+          if (error) throw error;
+
+          // Clean up project metrics from site_settings if any
+          const targetSlug = (slug || translations.en.slug || '').toLowerCase();
+          if (targetSlug) {
+            const { data: curSetting } = await supabase
+              .from('site_settings')
+              .select('*')
+              .eq('key', 'projects_page_settings')
+              .maybeSingle();
+            if (curSetting?.value?.project_metrics) {
+              const nextMetrics = { ...curSetting.value.project_metrics };
+              delete nextMetrics[targetSlug];
+              delete nextMetrics[id];
+              await supabase.from('site_settings').upsert({
+                key: 'projects_page_settings',
+                value: {
+                  ...curSetting.value,
+                  project_metrics: nextMetrics,
+                },
+                updated_at: new Date().toISOString(),
+              });
+            }
+          }
+        }
+
+        if (editingId === id) {
+          resetForm();
+        }
+        notify(`Project "${displayTitle}" deleted successfully.`);
+        broadcastLivePublish({ module: 'projects' });
+        await onRefresh();
+        showAlert?.({
+          type: 'success',
+          title: 'Project Deleted Successfully',
+          message: `"${displayTitle}" was removed from the database and public website.`,
+        });
+      } catch (err: any) {
+        notify(err.message || 'Failed to delete project', true);
+        showAlert?.({
+          type: 'error',
+          title: 'Delete Failed',
+          message: err.message || 'An error occurred while deleting the project.',
+        });
+      } finally {
+        setDeletingId(null);
+      }
+    };
+
+    if (showAlert) {
+      showAlert({
+        type: 'warning',
+        title: 'Delete Project?',
+        message: `Are you sure you want to permanently delete "${displayTitle}"? This will remove the project, its translations, and related media assignments from the website.`,
+        showCancel: true,
+        confirmText: 'Yes, Delete Project',
+        onConfirm: executeDelete,
+      });
+    } else if (window.confirm(`Are you sure you want to permanently delete project "${displayTitle}"?`)) {
+      executeDelete();
+    }
+  };
+
   const handleSave = async () => {
     if (!translations.en.title || !translations.en.slug) {
       notify('English project title and slug are required.', true);
@@ -1038,7 +1135,7 @@ export function ProjectsModule({
                 <p className="text-xs text-slate-600 line-clamp-2">
                   {enT?.summary || enT?.short_description}
                 </p>
-                <div className="pt-1 flex items-center justify-between">
+                <div className="pt-2 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100">
                   <button
                     type="button"
                     onClick={(e) => handleTogglePriority(e, p)}
@@ -1048,7 +1145,24 @@ export function ProjectsModule({
                         : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
                     }`}
                   >
-                    {p.is_featured ? '★ Priority Project (Top 3)' : '☆ Set as Priority Project'}
+                    {p.is_featured ? '★ Priority (Top 3)' : '☆ Set Priority'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteProject(p.id, enT?.title, enT?.slug);
+                    }}
+                    disabled={deletingId === p.id}
+                    className="text-xs font-semibold px-2.5 py-1 rounded-md border border-rose-200 text-rose-600 hover:bg-rose-50 hover:border-rose-300 disabled:opacity-50 transition cursor-pointer flex items-center gap-1 ml-auto"
+                    title="Delete this project"
+                  >
+                    {deletingId === p.id ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                    )}
+                    <span>Delete</span>
                   </button>
                 </div>
               </div>
@@ -1069,9 +1183,28 @@ export function ProjectsModule({
             {editingId ? 'Edit Project' : 'Create Project'}
           </h3>
           <div className="flex items-center gap-2">
+            {editingId && (
+              <button
+                type="button"
+                onClick={() => {
+                  const currentTitle = translations.en.title || 'this project';
+                  const currentSlug = translations.en.slug;
+                  handleDeleteProject(editingId, currentTitle, currentSlug);
+                }}
+                disabled={saving || deletingId === editingId}
+                className="px-3.5 py-2 rounded-lg bg-rose-50 hover:bg-rose-100 border border-rose-300 text-rose-700 text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-none transition disabled:opacity-50"
+              >
+                {deletingId === editingId ? (
+                  <Loader2 className="w-4 h-4 animate-spin text-rose-600" />
+                ) : (
+                  <Trash2 className="w-4 h-4 text-rose-600" />
+                )}
+                <span>Delete Project</span>
+              </button>
+            )}
             <button
               onClick={handleSave}
-              disabled={saving}
+              disabled={saving || Boolean(deletingId)}
               className="px-4 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white text-xs font-semibold flex items-center gap-2 cursor-pointer shadow-none transition"
             >
               {saving ? (
@@ -1501,21 +1634,42 @@ export function ProjectsModule({
           <p className="text-xs text-slate-500">
             Click <strong>Save Project</strong> to store all changes in Supabase and publish live to the public website.
           </p>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="px-5 py-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white text-xs font-bold flex items-center gap-2 cursor-pointer shadow-none transition"
-          >
-            {saving ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" /> Saving to Database...
-              </>
-            ) : (
-              <>
-                <Save className="w-4 h-4" /> Save Project & Publish Live
-              </>
+          <div className="flex items-center gap-2">
+            {editingId && (
+              <button
+                type="button"
+                onClick={() => {
+                  const currentTitle = translations.en.title || 'this project';
+                  const currentSlug = translations.en.slug;
+                  handleDeleteProject(editingId, currentTitle, currentSlug);
+                }}
+                disabled={saving || deletingId === editingId}
+                className="px-4 py-2.5 rounded-lg bg-rose-50 hover:bg-rose-100 border border-rose-300 text-rose-700 text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-none transition disabled:opacity-50"
+              >
+                {deletingId === editingId ? (
+                  <Loader2 className="w-4 h-4 animate-spin text-rose-600" />
+                ) : (
+                  <Trash2 className="w-4 h-4 text-rose-600" />
+                )}
+                <span>Delete Project</span>
+              </button>
             )}
-          </button>
+            <button
+              onClick={handleSave}
+              disabled={saving || Boolean(deletingId)}
+              className="px-5 py-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white text-xs font-bold flex items-center gap-2 cursor-pointer shadow-none transition"
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" /> Saving to Database...
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4" /> Save Project & Publish Live
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </div>
     </div>

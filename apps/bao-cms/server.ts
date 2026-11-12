@@ -504,6 +504,83 @@ export function createCmsApp() {
   );
 
   // ---------------------------------------------------------------------------
+  // 4b. DELETE PROJECT ENDPOINT
+  // Safely removes a project, its translations, activities, and audit logs.
+  // ---------------------------------------------------------------------------
+  app.delete(
+    '/api/v1/projects/:id',
+    requireStaffAuth,
+    async (req: AuthenticatedRequest, res: Response) => {
+      const hasPerm =
+        req.staff?.permissions.includes('projects.delete') ||
+        req.staff?.permissions.includes('projects.create_edit') ||
+        req.staff?.roles.includes('super_admin') ||
+        req.staff?.roles.includes('admin');
+
+      if (!hasPerm) {
+        res.status(403).json({ error: 'You do not have permission to delete projects.' });
+        return;
+      }
+
+      const projId = String(req.params.id);
+      const { data: project } = await req
+        .supabase!.from('projects')
+        .select('*, project_translations(*)')
+        .eq('id', projId)
+        .maybeSingle();
+
+      if (!project) {
+        res.status(404).json({ error: 'Project not found.' });
+        return;
+      }
+
+      // 1. Delete associated translations and activities
+      await req.supabase!.from('project_translations').delete().eq('project_id', projId);
+      await req.supabase!.from('project_activities').delete().eq('project_id', projId);
+
+      // 2. Delete project from database
+      const { error: delErr } = await req
+        .supabase!.from('projects')
+        .delete()
+        .eq('id', projId);
+
+      if (delErr) {
+        res.status(400).json({ error: delErr.message });
+        return;
+      }
+
+      // 3. Remove custom metrics for this project in site_settings if any
+      const enT = (project.project_translations || []).find((t: any) => t.language === 'en');
+      const slug = enT?.slug ? String(enT.slug) : '';
+      if (slug) {
+        const { data: curSetting } = await req
+          .supabase!.from('site_settings')
+          .select('*')
+          .eq('key', 'projects_page_settings')
+          .maybeSingle();
+        if (curSetting?.value?.project_metrics) {
+          const nextMetrics = { ...curSetting.value.project_metrics };
+          delete nextMetrics[slug.toLowerCase()];
+          delete nextMetrics[projId];
+          await req.supabase!.from('site_settings').upsert({
+            key: 'projects_page_settings',
+            value: {
+              ...curSetting.value,
+              project_metrics: nextMetrics,
+            },
+            updated_at: new Date().toISOString(),
+          });
+        }
+      }
+
+      const projectTitle = String(enT?.title || project.project_code || projId);
+      await logActivity(req, 'delete_project', 'projects', projId, { title: projectTitle });
+
+      res.json({ success: true, deleted_id: projId, title: projectTitle });
+    }
+  );
+
+  // ---------------------------------------------------------------------------
   // 5. STORIES OF CHANGE SAFEGUARDING & CONSENT ENFORCEMENT ENDPOINT
   // ---------------------------------------------------------------------------
   app.post(
