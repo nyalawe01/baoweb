@@ -1,53 +1,100 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, Suspense } from 'react';
 import { type LanguageCode } from '@bao/shared';
 import { Header, Footer } from './components/HeaderAndFooter.js';
-import { HomeView, ProgrammesView } from './components/HomeAndProgrammesViews.js';
-import {
-  AboutView,
-  ProjectsView,
-  ImpactView,
-  StoriesView,
-  NewsAndEventsView,
-  ResourcesView,
-  GetInvolvedView,
-  ContactView,
-  PolicyView,
-} from './components/InnerPagesViews.js';
+import { WebsiteSkeleton } from './components/WebsiteSkeleton.js';
+
+// Lazy-load view components for minimal initial bundle size and instant loading speed
+const HomeView = React.lazy(() => import('./components/HomeAndProgrammesViews.js').then((m) => ({ default: m.HomeView })));
+const ProgrammesView = React.lazy(() => import('./components/HomeAndProgrammesViews.js').then((m) => ({ default: m.ProgrammesView })));
+const AboutView = React.lazy(() => import('./components/InnerPagesViews.js').then((m) => ({ default: m.AboutView })));
+const ProjectsView = React.lazy(() => import('./components/InnerPagesViews.js').then((m) => ({ default: m.ProjectsView })));
+const ImpactView = React.lazy(() => import('./components/InnerPagesViews.js').then((m) => ({ default: m.ImpactView })));
+const StoriesView = React.lazy(() => import('./components/InnerPagesViews.js').then((m) => ({ default: m.StoriesView })));
+const NewsAndEventsView = React.lazy(() => import('./components/InnerPagesViews.js').then((m) => ({ default: m.NewsAndEventsView })));
+const ResourcesView = React.lazy(() => import('./components/InnerPagesViews.js').then((m) => ({ default: m.ResourcesView })));
+const GetInvolvedView = React.lazy(() => import('./components/InnerPagesViews.js').then((m) => ({ default: m.GetInvolvedView })));
+const ContactView = React.lazy(() => import('./components/InnerPagesViews.js').then((m) => ({ default: m.ContactView })));
+const PolicyView = React.lazy(() => import('./components/InnerPagesViews.js').then((m) => ({ default: m.PolicyView })));
+
+const SITEDATA_CACHE_KEY = 'bao_cached_site_data';
+
+function getCachedSiteData() {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = sessionStorage.getItem(SITEDATA_CACHE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object' && parsed.settings) {
+        return parsed;
+      }
+    }
+  } catch {}
+  return null;
+}
 
 export function App() {
   const [lang, setLang] = useState<LanguageCode>('en');
   const [currentPath, setCurrentPath] = useState<string>(window.location.pathname || '/');
-  const [siteData, setSiteData] = useState<any>({
-    settings: {},
-    menus: [],
-    pages: [],
-    programmes: [],
-    projects: [],
-    stories: [],
-    news: [],
-    events: [],
-    partners: [],
-    team: [],
-    publications: [],
-    indicators: [],
-    media: [],
-  });
-  const [loading, setLoading] = useState(true);
+  
+  const cachedData = useRef(getCachedSiteData()).current;
+  const [siteData, setSiteData] = useState<any>(
+    cachedData || {
+      settings: {},
+      menus: [],
+      pages: [],
+      programmes: [],
+      projects: [],
+      stories: [],
+      news: [],
+      events: [],
+      partners: [],
+      team: [],
+      publications: [],
+      indicators: [],
+      media: [],
+    }
+  );
+  
+  const [loading, setLoading] = useState<boolean>(!cachedData);
   const [isSyncing, setIsSyncing] = useState(false);
+  const isFetchingRef = useRef(false);
+  const lastFocusFetchRef = useRef<number>(Date.now());
+  const lastDataHashRef = useRef<string>('');
 
-  const loadFreshSiteData = () => {
+  const loadFreshSiteData = (force = false) => {
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
     setIsSyncing(true);
-    fetch('/api/public/site-data?_t=' + Date.now())
+
+    fetch('/api/public/site-data' + (force ? '?_t=' + Date.now() : ''))
       .then((r) => r.json())
       .then((data) => {
         if (data && !data.error) {
-          setSiteData(data);
+          // Compare fingerprint to prevent unnecessary re-renders of the entire component tree
+          const newHash = JSON.stringify({
+            settings: data.settings,
+            pagesCount: (data.pages || []).length,
+            projectsCount: (data.projects || []).length,
+            publicationsCount: (data.publications || []).length,
+            newsCount: (data.news || []).length,
+            mediaCount: (data.media || []).length,
+            menus: data.menus,
+          });
+
+          if (force || newHash !== lastDataHashRef.current) {
+            lastDataHashRef.current = newHash;
+            setSiteData(data);
+            try {
+              sessionStorage.setItem(SITEDATA_CACHE_KEY, JSON.stringify(data));
+            } catch {}
+          }
         }
       })
       .catch((err) => {
         console.error('Failed to sync site data:', err);
       })
       .finally(() => {
+        isFetchingRef.current = false;
         setLoading(false);
         setIsSyncing(false);
       });
@@ -57,7 +104,6 @@ export function App() {
     const onPopState = () => {
       setCurrentPath(window.location.pathname || '/');
       window.scrollTo({ top: 0, behavior: 'smooth' });
-      loadFreshSiteData();
     };
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);
@@ -66,20 +112,24 @@ export function App() {
   useEffect(() => {
     loadFreshSiteData();
 
-    // Auto-sync whenever user focuses the website window/tab (e.g. returning from Admin Dashboard)
+    // Throttled sync on tab focus (minimum 30s interval to prevent CPU lag)
     const onWindowFocus = () => {
-      loadFreshSiteData();
+      const now = Date.now();
+      if (now - lastFocusFetchRef.current > 30000) {
+        lastFocusFetchRef.current = now;
+        loadFreshSiteData();
+      }
     };
     window.addEventListener('focus', onWindowFocus);
 
-    // Cross-tab immediate sync via BroadcastChannel
+    // Cross-tab immediate sync via BroadcastChannel (instant update when published in CMS)
     let broadcastChannel: BroadcastChannel | null = null;
     try {
       broadcastChannel = new BroadcastChannel('bao_live_sync');
       broadcastChannel.onmessage = (event) => {
         if (event.data?.type === 'CONTENT_UPDATED') {
           console.log('[Live Sync] Instant publish from CMS detected, refreshing site data...', event.data);
-          loadFreshSiteData();
+          loadFreshSiteData(true);
         }
       };
     } catch {
@@ -90,15 +140,15 @@ export function App() {
     const onStorage = (e: StorageEvent) => {
       if (e.key === 'bao_live_content_timestamp') {
         console.log('[Live Sync] LocalStorage publish trigger detected, refreshing site data...');
-        loadFreshSiteData();
+        loadFreshSiteData(true);
       }
     };
     window.addEventListener('storage', onStorage);
 
-    // Live auto-poll every 4 seconds so changes reflect live without manual reload
+    // Light periodic background check (every 60 seconds instead of heavy 4s polling)
     const pollInterval = setInterval(() => {
       loadFreshSiteData();
-    }, 4000);
+    }, 60000);
 
     return () => {
       window.removeEventListener('focus', onWindowFocus);
@@ -114,7 +164,6 @@ export function App() {
     window.history.pushState({}, '', path);
     setCurrentPath(path);
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    loadFreshSiteData();
   };
 
   const segments = currentPath.split('/').filter(Boolean);
@@ -135,55 +184,55 @@ export function App() {
 
       <main className="flex-1">
         {loading ? (
-          <div className="max-w-7xl mx-auto px-4 py-24 text-center text-xs text-[#555B57]">
-            Loading Babawatoto Organization content...
-          </div>
-        ) : firstSeg === '' ? (
-          <HomeView lang={lang} siteData={siteData} navigate={navigate} />
-        ) : firstSeg === 'about' ? (
-          <AboutView lang={lang} subpage={secondSeg || 'about-street-children'} siteData={siteData} navigate={navigate} />
-        ) : firstSeg === 'about-street-children' || firstSeg === 'growing-up-on-the-streets' ? (
-          <AboutView lang={lang} subpage="about-street-children" siteData={siteData} navigate={navigate} />
-        ) : firstSeg === 'about-us' || firstSeg === 'who-we-are' ? (
-          <AboutView lang={lang} subpage="who-we-are" siteData={siteData} navigate={navigate} />
-        ) : firstSeg === 'mission-vision' || firstSeg === 'mission-and-vision' ? (
-          <AboutView lang={lang} subpage="mission-and-vision" siteData={siteData} navigate={navigate} />
-        ) : firstSeg === 'our-history' || firstSeg === 'history' ? (
-          <AboutView lang={lang} subpage="our-history" siteData={siteData} navigate={navigate} />
-        ) : firstSeg === 'leadership-governance' || firstSeg === 'governance' || firstSeg === 'our-team' || firstSeg === 'team' || firstSeg === 'meet-the-team' ? (
-          <AboutView lang={lang} subpage="leadership-and-governance" siteData={siteData} navigate={navigate} />
-        ) : firstSeg === 'gallery' ? (
-          <ResourcesView lang={lang} subpage="gallery" siteData={siteData} navigate={navigate} />
-        ) : firstSeg === 'documentation' ? (
-          <ResourcesView lang={lang} subpage="documentation" siteData={siteData} navigate={navigate} />
-        ) : firstSeg === 'policies-and-guidelines' ? (
-          <ResourcesView lang={lang} subpage="policies-and-guidelines" siteData={siteData} navigate={navigate} />
-        ) : firstSeg === 'publications' ? (
-          <ResourcesView lang={lang} subpage="publications" siteData={siteData} navigate={navigate} />
-        ) : firstSeg === 'programmes' ? (
-          <ProgrammesView lang={lang} slug={secondSeg} siteData={siteData} navigate={navigate} />
-        ) : firstSeg === 'projects' ? (
-          <ProjectsView lang={lang} slug={secondSeg} siteData={siteData} navigate={navigate} />
-        ) : firstSeg === 'impact' ? (
-          <ImpactView lang={lang} siteData={siteData} navigate={navigate} />
-        ) : firstSeg === 'stories' || firstSeg === 'news' || firstSeg === 'news-events' ? (
-          <NewsAndEventsView lang={lang} slug={secondSeg} siteData={siteData} navigate={navigate} />
-        ) : firstSeg === 'resources' ? (
-          <ResourcesView lang={lang} subpage={secondSeg} siteData={siteData} navigate={navigate} />
-        ) : firstSeg === 'get-involved' ? (
-          <GetInvolvedView lang={lang} siteData={siteData} navigate={navigate} />
-        ) : firstSeg === 'contact' ? (
-          <ContactView lang={lang} siteData={siteData} navigate={navigate} />
-        ) : firstSeg === 'policies' ? (
-          <PolicyView slug={secondSeg} />
+          <WebsiteSkeleton />
         ) : (
-          <HomeView lang={lang} siteData={siteData} navigate={navigate} />
+          <Suspense fallback={<WebsiteSkeleton />}>
+            {firstSeg === '' ? (
+              <HomeView lang={lang} siteData={siteData} navigate={navigate} />
+            ) : firstSeg === 'about' ? (
+              <AboutView lang={lang} subpage={secondSeg || 'about-street-children'} siteData={siteData} navigate={navigate} />
+            ) : firstSeg === 'about-street-children' || firstSeg === 'growing-up-on-the-streets' ? (
+              <AboutView lang={lang} subpage="about-street-children" siteData={siteData} navigate={navigate} />
+            ) : firstSeg === 'about-us' || firstSeg === 'who-we-are' ? (
+              <AboutView lang={lang} subpage="who-we-are" siteData={siteData} navigate={navigate} />
+            ) : firstSeg === 'mission-vision' || firstSeg === 'mission-and-vision' ? (
+              <AboutView lang={lang} subpage="mission-and-vision" siteData={siteData} navigate={navigate} />
+            ) : firstSeg === 'our-history' || firstSeg === 'history' ? (
+              <AboutView lang={lang} subpage="our-history" siteData={siteData} navigate={navigate} />
+            ) : firstSeg === 'leadership-governance' || firstSeg === 'governance' || firstSeg === 'our-team' || firstSeg === 'team' || firstSeg === 'meet-the-team' ? (
+              <AboutView lang={lang} subpage="leadership-and-governance" siteData={siteData} navigate={navigate} />
+            ) : firstSeg === 'gallery' ? (
+              <ResourcesView lang={lang} subpage="gallery" siteData={siteData} navigate={navigate} />
+            ) : firstSeg === 'documentation' ? (
+              <ResourcesView lang={lang} subpage="documentation" siteData={siteData} navigate={navigate} />
+            ) : firstSeg === 'policies-and-guidelines' ? (
+              <ResourcesView lang={lang} subpage="policies-and-guidelines" siteData={siteData} navigate={navigate} />
+            ) : firstSeg === 'publications' ? (
+              <ResourcesView lang={lang} subpage="publications" siteData={siteData} navigate={navigate} />
+            ) : firstSeg === 'programmes' ? (
+              <ProgrammesView lang={lang} slug={secondSeg} siteData={siteData} navigate={navigate} />
+            ) : firstSeg === 'projects' ? (
+              <ProjectsView lang={lang} slug={secondSeg} siteData={siteData} navigate={navigate} />
+            ) : firstSeg === 'impact' ? (
+              <ImpactView lang={lang} siteData={siteData} navigate={navigate} />
+            ) : firstSeg === 'stories' || firstSeg === 'news' || firstSeg === 'news-events' ? (
+              <NewsAndEventsView lang={lang} slug={secondSeg} siteData={siteData} navigate={navigate} />
+            ) : firstSeg === 'resources' ? (
+              <ResourcesView lang={lang} subpage={secondSeg} siteData={siteData} navigate={navigate} />
+            ) : firstSeg === 'get-involved' ? (
+              <GetInvolvedView lang={lang} siteData={siteData} navigate={navigate} />
+            ) : firstSeg === 'contact' ? (
+              <ContactView lang={lang} siteData={siteData} navigate={navigate} />
+            ) : firstSeg === 'policies' ? (
+              <PolicyView slug={secondSeg} />
+            ) : (
+              <HomeView lang={lang} siteData={siteData} navigate={navigate} />
+            )}
+          </Suspense>
         )}
       </main>
 
       <Footer lang={lang} navigate={navigate} settings={siteData.settings} menus={siteData.menus} />
-
-
     </div>
   );
 }
