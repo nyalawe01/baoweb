@@ -858,8 +858,11 @@ export function createCmsApp() {
   // ---------------------------------------------------------------------------
   const candidateClientDists = [
     path.resolve(__dirname, 'client'),
+    path.resolve(__dirname),
     path.resolve(process.cwd(), 'dist/client'),
+    path.resolve(process.cwd(), 'dist'),
     path.resolve(process.cwd(), 'apps/bao-cms/dist/client'),
+    path.resolve(process.cwd(), 'apps/bao-cms/dist'),
     path.resolve(__dirname, 'dist/client'),
     path.resolve(__dirname, '../dist/client'),
   ];
@@ -867,7 +870,11 @@ export function createCmsApp() {
     candidateClientDists.find((d) => existsSync(path.join(d, 'index.html'))) ||
     candidateClientDists[0];
 
+  app.use(express.static(__dirname));
+  app.use(express.static(path.join(__dirname, 'client')));
   app.use(express.static(clientDistPath));
+  app.use('/cms', express.static(__dirname));
+  app.use('/cms', express.static(path.join(__dirname, 'client')));
   app.use('/cms', express.static(clientDistPath));
 
   app.get('*', (req: Request, res: Response, next: NextFunction) => {
@@ -875,7 +882,16 @@ export function createCmsApp() {
       next();
       return;
     }
-    const indexHtml = path.join(clientDistPath, 'index.html');
+    let indexHtml = path.join(clientDistPath, 'index.html');
+    if (!existsSync(indexHtml)) {
+      for (const dir of candidateClientDists) {
+        const cand = path.join(dir, 'index.html');
+        if (existsSync(cand)) {
+          indexHtml = cand;
+          break;
+        }
+      }
+    }
     if (existsSync(indexHtml)) {
       res.sendFile(indexHtml);
     } else {

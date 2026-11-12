@@ -477,8 +477,11 @@ async function startServer() {
   } else {
     const candidateClientDists = [
       path.resolve(__dirname, 'client'),
+      path.resolve(__dirname),
       path.resolve(process.cwd(), 'dist/client'),
+      path.resolve(process.cwd(), 'dist'),
       path.resolve(process.cwd(), 'apps/bao-website/dist/client'),
+      path.resolve(process.cwd(), 'apps/bao-website/dist'),
       path.resolve(__dirname, 'dist/client'),
       path.resolve(__dirname, '../dist/client'),
     ];
@@ -486,9 +489,20 @@ async function startServer() {
       candidateClientDists.find((d) => fs.existsSync(path.join(d, 'index.html'))) ||
       candidateClientDists[0];
 
+    app.use(express.static(__dirname, { index: false }));
+    app.use(express.static(path.join(__dirname, 'client'), { index: false }));
     app.use(express.static(clientDist, { index: false }));
     app.get('*', (req: Request, res: Response) => {
-      const indexFile = path.join(clientDist, 'index.html');
+      let indexFile = path.join(clientDist, 'index.html');
+      if (!fs.existsSync(indexFile)) {
+        for (const dir of candidateClientDists) {
+          const cand = path.join(dir, 'index.html');
+          if (fs.existsSync(cand)) {
+            indexFile = cand;
+            break;
+          }
+        }
+      }
       if (fs.existsSync(indexFile)) {
         let html = fs.readFileSync(indexFile, 'utf-8');
         html = html.replace(
