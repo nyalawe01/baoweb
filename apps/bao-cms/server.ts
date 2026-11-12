@@ -909,11 +909,23 @@ export function createCmsApp() {
       next();
       return;
     }
-    if (indexHtml && existsSync(indexHtml)) {
-      res.sendFile(indexHtml);
-    } else {
-      res.status(200).send('Babawatoto Organization (BAO) CMS API is running.');
+    try {
+      if (indexHtml && existsSync(indexHtml)) {
+        const html = readFileSync(indexHtml, 'utf-8');
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        res.send(html);
+        return;
+      }
+    } catch (readErr) {
+      console.error('[bao-cms] Failed to read index.html:', readErr);
     }
+    res.status(200).send('Babawatoto Organization (BAO) CMS API is running.');
+  });
+
+  // Global error handler so unexpected exceptions never crash serverless lambdas
+  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+    console.error('[bao-cms] Unhandled server error:', err);
+    res.status(500).json({ error: err?.message || 'Internal Server Error' });
   });
 
   return app;

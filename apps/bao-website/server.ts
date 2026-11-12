@@ -537,6 +537,11 @@ async function startServer() {
         res.status(200).send('Babawatoto Organization Public Website API is running.');
       }
     });
+
+    app.use((err: any, _req: Request, res: Response, _next: any) => {
+      console.error('[bao-website] Unhandled server error:', err);
+      res.status(500).json({ error: err?.message || 'Internal Server Error' });
+    });
   }
 
   if (process.env.VITEST !== 'true' && !process.env.VERCEL) {
