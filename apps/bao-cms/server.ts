@@ -11,6 +11,11 @@ import helmet from 'helmet';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import multer from 'multer';
+
+const helmetFn: any = (helmet as any)?.default || helmet;
+const rateLimitFn: any = (rateLimit as any)?.default || rateLimit;
+const corsFn: any = (cors as any)?.default || cors;
+const multerFn: any = (multer as any)?.default || multer;
 import DOMPurify from 'isomorphic-dompurify';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import {
@@ -173,15 +178,15 @@ export function createCmsApp() {
   const app = express();
 
   app.use(
-    helmet({
+    (helmetFn as any)({
       contentSecurityPolicy: false,
       crossOriginResourcePolicy: { policy: 'cross-origin' },
     })
   );
-  app.use(cors());
+  app.use((corsFn as any)());
   app.use(express.json({ limit: '5mb' }));
 
-  const apiLimiter = rateLimit({
+  const apiLimiter = (rateLimitFn as any)({
     windowMs: 15 * 60 * 1000,
     max: 300,
     standardHeaders: true,
@@ -189,8 +194,8 @@ export function createCmsApp() {
   });
   app.use('/api/', apiLimiter);
 
-  const upload = multer({
-    storage: multer.memoryStorage(),
+  const upload = (multerFn as any)({
+    storage: (multerFn as any).memoryStorage ? (multerFn as any).memoryStorage() : multer.memoryStorage(),
     limits: { fileSize: 100 * 1024 * 1024 },
   });
 

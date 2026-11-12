@@ -10,6 +10,11 @@ import rateLimit from 'express-rate-limit';
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 
+const helmetFn: any = (helmet as any)?.default || helmet;
+const rateLimitFn: any = (rateLimit as any)?.default || rateLimit;
+const compressionFn: any = (compression as any)?.default || compression;
+const corsFn: any = (cors as any)?.default || cors;
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 import {
@@ -58,14 +63,14 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 export const app = express();
 
 app.use(
-  helmet({
+  (helmetFn as any)({
     contentSecurityPolicy: false,
     crossOriginEmbedderPolicy: false,
     referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
   })
 );
-app.use(compression());
-app.use(cors());
+app.use((compressionFn as any)());
+app.use((corsFn as any)());
 app.use(express.json({ limit: '1mb' }));
 
 // Serve public media files from cPanel storage outside public_html
@@ -293,7 +298,7 @@ app.get('/api/public/site-data', async (_req: Request, res: Response) => {
 });
 
 // Rate limiter for public forms
-const formLimiter = rateLimit({
+const formLimiter = (rateLimitFn as any)({
   windowMs: 15 * 60 * 1000,
   max: 15,
   standardHeaders: true,
