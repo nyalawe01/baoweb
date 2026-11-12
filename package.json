@@ -2,6 +2,7 @@
   "name": "baoweb-monorepo",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "description": "Babawatoto Organization (BAO) Database-Driven Public Website & Custom Administrative CMS",
   "workspaces": [
     "packages/*",
