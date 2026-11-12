@@ -128,7 +128,7 @@
   animation-play-state: paused;
 }
 
-/* 3D Hover Flip Cards for Priority Projects */
+/* 3D Hover & Click Flip Cards for Priority Projects */
 .bao-flip-card {
   perspective: 1200px;
 }
@@ -142,7 +142,8 @@
 }
 
 .bao-flip-card:hover .bao-flip-card-inner,
-.bao-flip-card:focus-within .bao-flip-card-inner {
+.bao-flip-card:focus-within .bao-flip-card-inner,
+.bao-flip-card.is-flipped .bao-flip-card-inner {
   transform: rotateY(180deg);
 }
 
@@ -154,6 +155,7 @@
   height: 100%;
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
+  border-radius: 1rem;
 }
 
 .bao-flip-card-back {

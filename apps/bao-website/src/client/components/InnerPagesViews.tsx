@@ -2893,139 +2893,175 @@ export function ResourcesView({
   const galleryImages = media.filter(
     (m: any) => m.visibility === 'public' && m.mime_type?.startsWith('image/')
   );
+
   // 1. STANDALONE PAGE: /resources/gallery (Our Gallery)
   if (activeSub === 'gallery') {
-    const cmsPage = (siteData.pages || []).find((p: any) => p.page_key === 'gallery' && p.status !== 'archived');
+    const cmsPage = (siteData.pages || []).find((p: any) => (p.page_key === 'gallery' || p.slug === 'gallery') && p.status !== 'archived');
     const tr = (cmsPage?.page_translations || []).find((t: any) => t.language === lang) || (cmsPage?.page_translations || [])[0] || {};
     const galSettings = siteData.settings?.gallery_page_settings || {};
-    const heroTitle = galSettings.hero_title || tr.title || 'Our Field Photo & Video Gallery';
-    const heroBadge = galSettings.hero_badge || tr.hero_tag || 'Resources · Visual Archive';
+    const heroTitle = galSettings.hero_title || tr.title || (lang === 'sw' ? 'Mkusanyiko wa Picha na Video za Babawatoto' : 'Our Field Photo & Video Gallery');
+    const heroBadge = galSettings.hero_badge || tr.hero_tag || (lang === 'sw' ? 'Rasilimali · Hifadhi ya Picha' : 'Resources · Visual Archive');
     const heroImage = galSettings.hero_banner_image || resolveMediaUrl(cmsPage?.featured_media_id, media) || '/media/public/images/programmes/arts1.webp';
-    const leadDescription = galSettings.lead_description || tr.subtitle || 'Verified field photographs and documentary videos across Child Protection, MEMKWA Education, HEART Creative Arts, and Youth Livelihoods in Dar es Salaam.';
+    const leadDescription = galSettings.lead_description || tr.subtitle || (lang === 'sw' ? 'Picha na video zilizothibitishwa kutoka nyanjani za miradi ya Ulinzi wa Mtoto, MEMKWA, Sanaa za HEART, na Maisha ya Vijana Dar es Salaam.' : 'Verified field photographs and documentary videos across Child Protection, MEMKWA Education, HEART Creative Arts, and Youth Livelihoods in Dar es Salaam.');
+
+    const formattedGalleryItems = (galleryImages.length > 0
+      ? galleryImages.map((img: any) => ({
+        id: img.id,
+        src: `/media/${img.storage_key}`,
+        title: (lang === 'sw' ? img.title_sw : img.title_en) || img.title_en || img.title || img.original_filename || (lang === 'sw' ? 'Kazi ya Jamii' : 'Community Field Action'),
+        alt: (lang === 'sw' ? img.alt_text_sw : img.alt_text_en) || img.alt_text_en || img.alt_text || img.title_en || 'Babawatoto Gallery',
+        caption: (lang === 'sw' ? img.caption_sw : img.caption_en) || img.caption_en || img.caption || img.alt_text_en || img.alt_text || '',
+        category: img.category || (lang === 'sw' ? 'Shambani' : 'Field Photo'),
+        isPlaceholder: false,
+      }))
+      : [
+        { id: 'g1', src: '/media/public/images/programmes/arts1.webp', title: 'HEART Creative Arts Workshop', alt: 'Creative Arts', caption: 'Children engaged in acrobatic arts and drama facilitation.', category: 'Arts & Culture', isPlaceholder: false },
+        { id: 'g2', src: '/media/public/images/programmes/IMG_1087.JPG', title: 'Street Outreach in Dar es Salaam', alt: 'Street Outreach', caption: 'Direct social work support and life-skills counselling.', category: 'Child Protection', isPlaceholder: false },
+        { id: 'g3', src: '/media/public/images/organization/abouts.webp', title: 'MEMKWA Accelerated Learning', alt: 'Education Catch-up', caption: 'Non-formal classroom instruction preparing out-of-school youth.', category: 'Education', isPlaceholder: false },
+        { id: 'g4', src: '/media/public/images/programmes/YOUTH.webp', title: 'Youth Entrepreneurship Session', alt: 'Youth Livelihoods', caption: 'Vocational apprenticeships and financial literacy training.', category: 'Livelihoods', isPlaceholder: false },
+        { id: 'g5', src: '/media/public/images/projects/WATOTO.webp', title: 'Child Rights Forum & Safeguarding', alt: 'Child Protection', caption: 'Safe shelter, psycho-social care, and family reunification.', category: 'Safeguarding', isPlaceholder: false },
+        { id: 'g6', src: '/media/public/images/organization/hero1.webp', title: 'Community Sports & Recreation', alt: 'Sports Program', caption: 'Promoting teamwork, self-confidence, and youth wellness.', category: 'Youth Wellness', isPlaceholder: false },
+        { id: 'g7', src: '/media/public/images/programmes/kizazi.webp', title: 'Youth Digital Skills & Creative Media', alt: 'Digital Literacy', caption: 'Modern audio-visual and multimedia computer education.', category: 'Creative Tech', isPlaceholder: false },
+        { id: 'g8', src: '/media/public/images/organization/babawatoto_center.webp', title: 'Babawatoto Community Centre', alt: 'Centre Activities', caption: 'Our multi-purpose community resource and child activity hub.', category: 'Community Hub', isPlaceholder: false },
+      ]
+    );
+
     return (
-      <div className="max-w-7xl mx-auto px-4 py-12 space-y-14">
-        <section className="bg-[#E6A500] text-black p-8 lg:p-14 grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
-          <div className="lg:col-span-7 space-y-5">
-            <span className="px-3.5 py-1.5 bg-white text-black font-extrabold uppercase tracking-wider text-[15px] inline-block">
-              {heroBadge}
-            </span>
-            <h1 className="text-[38px] sm:text-[48px] font-extrabold text-black leading-tight">
-              {heroTitle}
-            </h1>
-            <p className="text-[20px] text-black font-medium leading-relaxed">
-              {leadDescription}
-            </p>
-          </div>
-          <div className="lg:col-span-5">
-            <img
-              src={heroImage}
-              alt={heroTitle}
-              className="w-full h-80 object-cover border-4 border-white shadow-none"
-            />
-          </div>
-        </section>
-        <SectionSeparator label="Verified Field Photography Collection" />
-        <div className="text-center space-y-2">
-          <h2 className="text-[32px] sm:text-[38px] font-semibold text-black text-center mx-auto">
+      <StandardPageTemplate
+        pageTitle={heroTitle}
+        pageBadge={heroBadge}
+        heroImage={heroImage}
+        leadDescription={leadDescription}
+        siteData={siteData}
+        navigate={navigate}
+        hideNews={false}
+      >
+        <SectionSeparator label={lang === 'sw' ? 'Mkusanyiko wa Picha Zilizothibitishwa' : 'Verified Field Photography Collection'} />
+        <div className="text-center space-y-2 mb-6">
+          <h2 className="text-[28px] sm:text-[36px] font-extrabold text-black text-center mx-auto">
             {lang === 'sw' ? 'Picha Zetu za Hivi Karibuni' : 'Our Latest Moments'}
           </h2>
-          <p className="text-[18px] text-black/60 text-center max-w-xl mx-auto">
+          <p className="text-[17px] sm:text-[19px] text-black/70 text-center max-w-2xl mx-auto font-medium">
             {lang === 'sw'
-              ? 'Mkusanyiko wa picha za kazi zetu za hivi karibuni katika jamii.'
-              : 'A visual collection of our most recent work in the community, captured with care and consent.'}
+              ? 'Mkusanyiko wa picha za kazi zetu za hivi karibuni katika jamii, zikipigwa kwa heshima na ridhaa.'
+              : 'A visual collection of our most recent work in the community, captured with care, dignity, and informed consent.'}
           </p>
         </div>
-        <div className="flex flex-wrap items-center justify-center gap-4 max-w-6xl mx-auto">
-          {(galleryImages.length > 0
-            ? galleryImages.map((img: any) => ({
-              id: img.id,
-              src: `/media/${img.storage_key}`,
-              title: (lang === 'sw' ? img.title_sw : img.title_en) || img.title_en || img.title || img.original_filename || '',
-              alt: (lang === 'sw' ? img.alt_text_sw : img.alt_text_en) || img.alt_text_en || img.alt_text || img.title_en || 'Babawatoto Gallery',
-              caption: (lang === 'sw' ? img.caption_sw : img.caption_en) || img.caption_en || img.caption || img.alt_text_en || img.alt_text || '',
-              isPlaceholder: false,
-            }))
-            : Array.from({ length: 8 }, (_, idx) => ({
-              id: `gallery-placeholder-${idx}`,
-              src: '',
-              title: lang === 'sw' ? 'Kichwa cha Picha' : 'Image Title',
-              alt: '',
-              caption: '',
-              isPlaceholder: true,
-            }))
-          ).map((item: any) => (
-            <div key={item.id} className="relative group rounded-lg overflow-hidden">
+
+        {/* Responsive Photo Gallery Grid across all screen sizes (mobile 1 col, small 2 cols, tablet 3 cols, desktop 4 cols) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+          {formattedGalleryItems.map((item: any) => (
+            <div
+              key={item.id}
+              className="relative group rounded-2xl overflow-hidden border-2 border-black/10 hover:border-[#E6A500] bg-white shadow-sm hover:shadow-xl transition-all duration-300 aspect-[4/3] flex flex-col justify-end cursor-pointer"
+              onClick={() => !item.isPlaceholder && setLightbox(item)}
+              tabIndex={0}
+              role="button"
+              aria-label={item.title}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  if (!item.isPlaceholder) setLightbox(item);
+                }
+              }}
+            >
               {item.isPlaceholder ? (
-                <div className="size-56 bg-[#F2F2F2] flex flex-col items-center justify-center gap-2">
-                  <ImageIcon className="w-8 h-8 text-black/40" />
-                  <span className="text-[15px] font-semibold text-black/50">
+                <div className="w-full h-full bg-[#F2F2F2] flex flex-col items-center justify-center gap-2 p-4 text-center">
+                  <ImageIcon className="w-10 h-10 text-black/40" />
+                  <span className="text-[14px] font-bold text-black/50">
                     {lang === 'sw' ? 'Nafasi ya Picha' : 'Photo Placeholder'}
                   </span>
                 </div>
               ) : (
-                <img
-                  src={item.src}
-                  alt={item.alt}
-                  loading="lazy"
-                  className="size-56 object-cover object-top"
-                />
+                <>
+                  <img
+                    src={item.src}
+                    alt={item.alt}
+                    loading="lazy"
+                    className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                  {/* Subtle permanent bottom gradient for readability + enhanced on hover/touch */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-85 sm:opacity-75 sm:group-hover:opacity-95 transition-opacity duration-300" />
+
+                  {/* Category Pill at top right */}
+                  {item.category && (
+                    <div className="absolute top-3 right-3 z-10">
+                      <span className="px-2.5 py-1 bg-black/75 backdrop-blur-xs text-white text-[11px] font-bold rounded-full border border-white/20 shadow-sm">
+                        {item.category}
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="relative p-4 sm:p-5 text-white z-10 flex flex-col justify-end space-y-1">
+                    <h3 className="text-base sm:text-lg font-black text-white line-clamp-2 drop-shadow-sm leading-snug">
+                      {item.title}
+                    </h3>
+                    {item.caption && (
+                      <p className="text-xs sm:text-sm text-white/80 line-clamp-1 font-medium">
+                        {item.caption}
+                      </p>
+                    )}
+                    <div className="pt-2 flex items-center justify-between">
+                      <span className="inline-flex items-center gap-1.5 text-xs font-black text-[#E6A500] group-hover:underline">
+                        <span>{lang === 'sw' ? 'Ona Zaidi' : 'View Full Image'}</span>
+                        <ExternalLink className="w-3.5 h-3.5 text-[#E6A500]" />
+                      </span>
+                    </div>
+                  </div>
+                </>
               )}
-              <div className="absolute inset-0 flex flex-col justify-end p-4 text-white bg-black/50 opacity-0 group-hover:opacity-100 transition-all duration-300">
-                <h3 className="text-[20px] font-medium text-white line-clamp-2">{item.title}</h3>
-                {!item.isPlaceholder && (
-                  <button
-                    type="button"
-                    onClick={() => setLightbox(item)}
-                    className="flex items-center gap-1 text-[15px] text-white/70 hover:text-white transition cursor-pointer"
-                  >
-                    {lang === 'sw' ? 'Ona Zaidi' : 'Show More'}
-                    <svg width="16" height="16" viewBox="0 0 13 13" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M8.125 1.625H11.375V4.875" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" />
-                      <path d="M5.41602 7.58333L11.3743 1.625" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" />
-                      <path d="M9.75 7.04167V10.2917C9.75 10.579 9.63586 10.8545 9.4327 11.0577C9.22953 11.2609 8.95398 11.375 8.66667 11.375H2.70833C2.42102 11.375 2.14547 11.2609 1.9423 11.0577C1.73914 10.8545 1.625 10.579 1.625 10.2917V4.33333C1.625 4.04602 1.73914 3.77047 1.9423 3.5673C2.14547 3.36414 2.42102 3.25 2.70833 3.25H5.95833" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </button>
-                )}
-              </div>
             </div>
           ))}
         </div>
+
         {/* Lightbox for "Show More" */}
         {lightbox && (
           <div
-            className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-4"
+            className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6"
             onClick={() => setLightbox(null)}
             role="dialog"
             aria-modal="true"
           >
             <div
-              className="relative max-w-5xl w-full bg-white rounded-lg overflow-hidden"
+              className="relative max-w-5xl w-full bg-white rounded-2xl overflow-hidden shadow-2xl border-2 border-black"
               onClick={(e) => e.stopPropagation()}
             >
               <button
                 type="button"
                 onClick={() => setLightbox(null)}
-                className="absolute top-3 right-3 w-10 h-10 rounded-full bg-white text-black text-[22px] font-bold flex items-center justify-center hover:bg-[#F2F2F2]"
+                className="absolute top-3 right-3 z-20 w-10 h-10 rounded-full bg-black/80 hover:bg-black text-white text-[24px] font-bold flex items-center justify-center shadow-lg transition cursor-pointer"
                 aria-label="Close"
               >
-                Ã
+                &times;
               </button>
               <img
                 src={lightbox.src}
                 alt={lightbox.alt}
                 className="w-full max-h-[75vh] object-contain bg-black"
               />
-              <div className="p-5 space-y-1">
-                <div className="text-[20px] font-semibold text-black">{lightbox.title}</div>
+              <div className="p-5 sm:p-6 space-y-1.5 bg-white">
+                <div className="flex items-center justify-between gap-4">
+                  <h3 className="text-xl sm:text-2xl font-black text-black leading-snug">
+                    {lightbox.title}
+                  </h3>
+                  {lightbox.category && (
+                    <span className="px-3 py-1 bg-[#E6A500] text-black font-extrabold uppercase text-xs tracking-wider rounded">
+                      {lightbox.category}
+                    </span>
+                  )}
+                </div>
                 {lightbox.caption && (
-                  <p className="text-[18px] text-black/70">{lightbox.caption}</p>
+                  <p className="text-sm sm:text-base text-black/75 font-medium leading-relaxed">
+                    {lightbox.caption}
+                  </p>
                 )}
               </div>
             </div>
           </div>
         )}
-        <SectionSeparator label="Official @babawatotoorganization Video Archive" />
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-8">
+
+        <SectionSeparator label={lang === 'sw' ? 'Hifadhi ya Video Rasmi @babawatotoorganization' : 'Official @babawatotoorganization Video Archive'} />
+        <section className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
           {[
             {
               id: 'pdx8DWYJM_o',
@@ -3043,8 +3079,8 @@ export function ResourcesView({
               desc: 'Live cultural drumming, dance, and youth empowerment performance.',
             },
           ].map((vid) => (
-            <div key={vid.id} className="bg-white border border-gray-200 shadow-none overflow-hidden">
-              <div className="aspect-video bg-white">
+            <div key={vid.id} className="bg-white border-2 border-black/10 hover:border-[#E6A500] rounded-2xl shadow-sm hover:shadow-lg transition overflow-hidden">
+              <div className="aspect-video bg-black">
                 <iframe
                   src={`https://www.youtube.com/embed/${vid.id}?rel=0&enablejsapi=1`}
                   title={vid.title}
@@ -3055,75 +3091,71 @@ export function ResourcesView({
                 />
               </div>
               <div className="p-5 space-y-2">
-                <h3 className="text-[21px] font-extrabold text-black">{vid.title}</h3>
-                <p className="text-[18px] text-black leading-relaxed">{vid.desc}</p>
+                <h3 className="text-lg font-black text-black line-clamp-2">{vid.title}</h3>
+                <p className="text-sm text-black/75 leading-relaxed font-medium">{vid.desc}</p>
               </div>
             </div>
           ))}
         </section>
-      </div>
+      </StandardPageTemplate>
     );
   }
+
   // 2. STANDALONE PAGE: /resources/documentation (Documentation)
   if (activeSub === 'documentation') {
     const docItems = publications.filter((p: any) =>
       ['manual', 'research', 'annual_report'].includes(p.publication_category)
     );
+    const cmsPage = (siteData.pages || []).find((p: any) => (p.page_key === 'documentation' || p.slug === 'documentation') && p.status !== 'archived');
+    const tr = (cmsPage?.page_translations || []).find((t: any) => t.language === lang) || (cmsPage?.page_translations || [])[0] || {};
+    const docSettings = siteData.settings?.documentation_page_settings || {};
+    const heroTitle = docSettings.hero_title || tr.title || (lang === 'sw' ? 'Nyaraka za Programu na Miongozo ya Kitaalamu' : 'Programme Documentation & Technical Manuals');
+    const heroBadge = docSettings.hero_badge || tr.hero_tag || (lang === 'sw' ? 'Rasilimali · Nyaraka za Kitaasisi' : 'Resources · Institutional Documentation');
+    const heroImage = docSettings.hero_banner_image || resolveMediaUrl(cmsPage?.featured_media_id, media) || '/media/public/images/programmes/YOUTH.webp';
+    const leadDescription = docSettings.lead_description || tr.subtitle || (lang === 'sw' ? 'Nyaraka za kina za mbinu za ustawi wa jamii za Babawatoto, mitaala ya elimu isiyo rasmi ya MEMKWA, miongozo ya tiba ya sanaa za HEART, na mifumo ya MEL.' : 'Comprehensive documentation of Babawatoto’s social work methodologies, MEMKWA non-formal education curriculum, HEART creative arts therapy guides, and MEL frameworks.');
+
     return (
-      <div className="max-w-7xl mx-auto px-4 py-12 space-y-14">
-        <section className="bg-[#E6A500] text-black p-8 lg:p-14 grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
-          <div className="lg:col-span-7 space-y-5">
-            <span className="px-3.5 py-1.5 bg-white text-black font-extrabold uppercase tracking-wider text-[15px] inline-block">
-              Resources Â· Institutional Documentation
-            </span>
-            <h1 className="text-[38px] sm:text-[48px] font-extrabold text-black leading-tight">
-              Programme Documentation & Technical Manuals
-            </h1>
-            <p className="text-[20px] text-black font-medium leading-relaxed">
-              Comprehensive documentation of Babawatotoâs social work methodologies, MEMKWA
-              non-formal education curriculum, HEART creative arts therapy guides, and MEL
-              frameworks.
-            </p>
-          </div>
-          <div className="lg:col-span-5">
-            <img
-              src="/media/public/images/programmes/YOUTH.webp"
-              alt="Babawatoto Programme Documentation"
-              className="w-full h-80 object-cover border-4 border-white shadow-none"
-            />
-          </div>
-        </section>
-        <SectionSeparator label="Core Methodology & Technical Frameworks" />
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <StandardPageTemplate
+        pageTitle={heroTitle}
+        pageBadge={heroBadge}
+        heroImage={heroImage}
+        leadDescription={leadDescription}
+        siteData={siteData}
+        navigate={navigate}
+        hideNews={false}
+      >
+        <SectionSeparator label={lang === 'sw' ? 'Mbinu Kuu na Mifumo ya Kitaalamu' : 'Core Methodology & Technical Frameworks'} />
+        <section className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
           {[
             {
-              title: 'Street Outreach & Case Management SOPs',
-              body: 'Standard Operating Procedures for street child identification, intake assessment, family tracing, and reunification follow-up.',
+              title: lang === 'sw' ? 'Miongozo ya Utambuzi wa Watoto Mtaani' : 'Street Outreach & Case Management SOPs',
+              body: lang === 'sw' ? 'Taratibu sanifu za uendeshaji kwa ajili ya utambuzi wa watoto wanaoishi mazingira magumu mtaani, tathmini, na uunganishaji na familia.' : 'Standard Operating Procedures for street child identification, intake assessment, family tracing, and reunification follow-up.',
               img: '/media/public/images/programmes/IMG_1087.JPG',
             },
             {
-              title: 'MEMKWA Catch-Up Education Curriculum Guide',
-              body: 'Accelerated literacy, numeracy, and life-skills curriculum enabling out-of-school children to re-enter formal primary and secondary schools.',
+              title: lang === 'sw' ? 'Mwongozo wa Mtaala wa MEMKWA' : 'MEMKWA Catch-Up Education Curriculum Guide',
+              body: lang === 'sw' ? 'Mtaala wa elimu ya kasi wa kusoma, kuhesabu, na stadi za maisha unaowawezesha watoto walioko nje ya shule kurudi mfumo rasmi.' : 'Accelerated literacy, numeracy, and life-skills curriculum enabling out-of-school children to re-enter formal primary and secondary schools.',
               img: '/media/public/images/organization/abouts.webp',
             },
             {
-              title: 'HEART Creative Arts & Psychosocial Manual',
-              body: 'Structured facilitation guide for healing and education through acrobatics, theatre-for-development, and traditional music.',
+              title: lang === 'sw' ? 'Mwongozo wa Sanaa za Ubunifu za HEART' : 'HEART Creative Arts & Psychosocial Manual',
+              body: lang === 'sw' ? 'Mwongozo maalum wa uponyaji wa kisaikolojia na elimu kupitia sarakasi, maigizo ya maendeleo, na ngoma za asili.' : 'Structured facilitation guide for healing and education through acrobatics, theatre-for-development, and traditional music.',
               img: '/media/public/images/programmes/arts1.webp',
             },
           ].map((item, idx) => (
-            <div key={idx} className="bg-white border border-gray-200 shadow-none overflow-hidden">
-              <img src={item.img} alt={item.title} className="w-full h-56 object-cover" />
+            <div key={idx} className="bg-white border-2 border-black/10 hover:border-[#E6A500] rounded-2xl shadow-sm hover:shadow-lg transition overflow-hidden">
+              <img src={item.img} alt={item.title} className="w-full h-52 object-cover" />
               <div className="p-6 space-y-3">
-                <h3 className="text-[24px] font-extrabold text-black">{item.title}</h3>
-                <p className="text-[18px] text-black leading-relaxed">{item.body}</p>
+                <h3 className="text-xl font-black text-black leading-snug">{item.title}</h3>
+                <p className="text-sm sm:text-base text-black/80 leading-relaxed font-medium">{item.body}</p>
               </div>
             </div>
           ))}
         </section>
-        <SectionSeparator label="Downloadable Documentation Repository" />
+
+        <SectionSeparator label={lang === 'sw' ? 'Hifadhi ya Nyaraka Zinazoweza Kupakuliwa' : 'Downloadable Documentation Repository'} />
         {docItems.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
             {docItems.map((pub: any) => {
               const tr =
                 (pub.publication_translations || []).find((t: any) => t.language === lang) ||
@@ -3133,24 +3165,27 @@ export function ResourcesView({
               return (
                 <div
                   key={pub.id}
-                  className="bg-white border border-gray-200 shadow-none p-7 flex items-start justify-between gap-4"
+                  className="bg-white border-2 border-black/10 hover:border-[#E6A500] rounded-2xl shadow-sm hover:shadow-lg transition p-6 sm:p-7 flex flex-col justify-between gap-4"
                 >
                   <div className="space-y-2">
-                    <span className="px-3 py-1 bg-[#E6A500] text-black font-bold uppercase text-[15px] inline-block">
-                      {pub.publication_category} Â· {pub.publication_year}
+                    <span className="px-3 py-1 bg-[#E6A500] text-black font-extrabold uppercase text-xs tracking-wider rounded-md inline-block">
+                      {pub.publication_category} · {pub.publication_year}
                     </span>
-                    <h3 className="font-extrabold text-[24px] text-black">{tr.title}</h3>
-                    <p className="text-[18px] text-black">{tr.summary}</p>
+                    <h3 className="font-black text-xl sm:text-2xl text-black leading-snug">{tr.title}</h3>
+                    <p className="text-sm sm:text-base text-black/80 font-medium leading-relaxed">{tr.summary}</p>
                   </div>
                   {docUrl && (
-                    <a
-                      href={docUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="bao-btn px-4 py-2.5 text-black font-extrabold text-[18px] flex items-center gap-2 shrink-0"
-                    >
-                      <Download className="w-5 h-5 text-black" /> PDF
-                    </a>
+                    <div className="pt-2">
+                      <a
+                        href={docUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="bao-btn px-5 py-2.5 bg-black text-white hover:bg-neutral-900 font-extrabold text-sm inline-flex items-center gap-2 rounded-lg"
+                      >
+                        <Download className="w-4 h-4 text-[#E6A500]" />
+                        <span>Download PDF</span>
+                      </a>
+                    </div>
                   )}
                 </div>
               );
@@ -3158,75 +3193,71 @@ export function ResourcesView({
           </div>
         ) : (
           <EmptyStateCard
-            title="Technical Documentation Repository"
-            description="Upload technical manuals and programme documentation via the BAO Administrative CMS Resources module."
+            title={lang === 'sw' ? 'Hifadhi ya Nyaraka za Kitaalamu' : 'Technical Documentation Repository'}
+            description={lang === 'sw' ? 'Pakia miongozo ya kiufundi na nyaraka za programu kupitia sehemu ya Usimamizi wa Tovuti (CMS).' : 'Upload technical manuals and programme documentation via the BAO Administrative CMS Resources module.'}
             icon={BookOpen}
           />
         )}
-      </div>
+      </StandardPageTemplate>
     );
   }
+
   // 3. STANDALONE PAGE: /resources/policies-and-guidelines (Policy and Guidelines)
   if (activeSub === 'policies-and-guidelines') {
     const policyDocs = publications.filter((p: any) =>
       ['policy', 'guideline'].includes(p.publication_category)
     );
+    const cmsPage = (siteData.pages || []).find((p: any) => (p.page_key === 'policies-and-guidelines' || p.slug === 'policies-and-guidelines') && p.status !== 'archived');
+    const tr = (cmsPage?.page_translations || []).find((t: any) => t.language === lang) || (cmsPage?.page_translations || [])[0] || {};
+    const polSettings = siteData.settings?.policies_page_settings || {};
+    const heroTitle = polSettings.hero_title || tr.title || (lang === 'sw' ? 'Sera za Shirika na Miongozo ya Uendeshaji' : 'Organizational Policies & Operational Guidelines');
+    const heroBadge = polSettings.hero_badge || tr.hero_tag || (lang === 'sw' ? 'Rasilimali · Utawala, Maadili na Ulinzi' : 'Resources · Governance, Ethics & Safeguarding');
+    const heroImage = polSettings.hero_banner_image || resolveMediaUrl(cmsPage?.featured_media_id, media) || '/media/public/images/projects/WATOTO.webp';
+    const leadDescription = polSettings.lead_description || tr.subtitle || (lang === 'sw' ? 'Shirika la Babawatoto linazingatia kanuni thabiti za kutovumilia kabisa unyanyasaji wa watoto na kufuata Sheria ya Mtoto ya Tanzania (2009) na viwango vya kimataifa vya kibinadamu.' : 'Babawatoto Centre for Children and Youth Trust enforces zero tolerance for child abuse and upholds strict institutional policies aligned with Tanzania’s Law of the Child Act (2009) and international humanitarian standards.');
+
     return (
-      <div className="max-w-7xl mx-auto px-4 py-12 space-y-14">
-        <section className="bg-[#E6A500] text-black p-8 lg:p-14 grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
-          <div className="lg:col-span-7 space-y-5">
-            <span className="px-3.5 py-1.5 bg-white text-black font-extrabold uppercase tracking-wider text-[15px] inline-flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-black" /> Governance, Ethics & Safeguarding
-            </span>
-            <h1 className="text-[38px] sm:text-[48px] font-extrabold text-black leading-tight">
-              Organizational Policies & Operational Guidelines
-            </h1>
-            <p className="text-[20px] text-black font-medium leading-relaxed">
-              Babawatoto Centre for Children and Youth Trust enforces zero tolerance for child abuse
-              and upholds strict institutional policies aligned with Tanzaniaâs Law of the Child Act
-              (2009) and international humanitarian standards.
-            </p>
-          </div>
-          <div className="lg:col-span-5">
-            <img
-              src="/media/public/images/projects/WATOTO.webp"
-              alt="Child Safeguarding Policy"
-              className="w-full h-80 object-cover border-4 border-white shadow-none"
-            />
-          </div>
-        </section>
-        <SectionSeparator label="Mandatory Institutional Policies" />
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <StandardPageTemplate
+        pageTitle={heroTitle}
+        pageBadge={heroBadge}
+        heroImage={heroImage}
+        leadDescription={leadDescription}
+        siteData={siteData}
+        navigate={navigate}
+        hideNews={false}
+      >
+        <SectionSeparator label={lang === 'sw' ? 'Sera za Lazima za Kitaasisi' : 'Mandatory Institutional Policies'} />
+        <section className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
           {[
             {
-              title: '1. Child Safeguarding & Protection Policy',
-              desc: 'Mandatory background vetting, staff code of conduct, incident reporting protocols, and written informed consent requirements for all child-related media and stories.',
+              title: lang === 'sw' ? '1. Sera ya Ulinzi na Usalama wa Mtoto' : '1. Child Safeguarding & Protection Policy',
+              desc: lang === 'sw' ? 'Uhakiki wa lazima wa watumishi, kanuni za maadili, itifaki za kutoa taarifa za matukio, na ridhaa rasmi kwa ajili ya picha na hadithi za watoto.' : 'Mandatory background vetting, staff code of conduct, incident reporting protocols, and written informed consent requirements for all child-related media and stories.',
             },
             {
-              title: '2. Prevention of Sexual Exploitation, Abuse & Harassment (PSEAH)',
-              desc: 'Strict zero-tolerance policy protecting beneficiaries, community members, and staff, with confidential whistleblowing channels.',
+              title: lang === 'sw' ? '2. Sera ya Kuzuia Unyonyaji na Unyanyasaji wa Kijinsia (PSEAH)' : '2. Prevention of Sexual Exploitation, Abuse & Harassment (PSEAH)',
+              desc: lang === 'sw' ? 'Msimamo mkali wa kutovumilia kabisa unaowalinda walengwa, jamii na wafanyakazi, ukiambatana na mifumo ya siri ya kutoa taarifa.' : 'Strict zero-tolerance policy protecting beneficiaries, community members, and staff, with confidential whistleblowing channels.',
             },
             {
-              title: '3. Financial Management, Anti-Fraud & Procurement Policy',
-              desc: 'Audited accounting controls, dual-signatory authorization, transparent vendor procurement, and donor compliance standards.',
+              title: lang === 'sw' ? '3. Sera ya Usimamizi wa Fedha, Kupinga Udanganyifu na Ununuzi' : '3. Financial Management, Anti-Fraud & Procurement Policy',
+              desc: lang === 'sw' ? 'Udhibiti wa ukaguzi wa fedha, uthibitishaji wa watia saini wawili, ununuzi wa uwazi, na viwango vya utiifu kwa wafadhili.' : 'Audited accounting controls, dual-signatory authorization, transparent vendor procurement, and donor compliance standards.',
             },
             {
-              title: '4. Gender Equality, Disability & Social Inclusion (GEDSI) Guideline',
-              desc: 'Ensuring equitable participation and barrier-free access for girls, street-connected youth, and children with disabilities.',
+              title: lang === 'sw' ? '4. Mwongozo wa Usawa wa Kijinsia, Ulemavu na Ushirikishwaji (GEDSI)' : '4. Gender Equality, Disability & Social Inclusion (GEDSI) Guideline',
+              desc: lang === 'sw' ? 'Kuhakikisha ushiriki sawa na kuondoa vizuizi kwa wasichana, vijana wanaoishi mazingira magumu, na watoto wenye ulemavu.' : 'Ensuring equitable participation and barrier-free access for girls, street-connected youth, and children with disabilities.',
             },
           ].map((pol, idx) => (
-            <div key={idx} className="bg-white border border-gray-200 shadow-none p-8 space-y-3">
-              <div className="w-12 h-12 bg-[#E6A500] text-black flex items-center justify-center">
+            <div key={idx} className="bg-white border-2 border-black/10 hover:border-[#E6A500] rounded-2xl shadow-sm hover:shadow-lg transition p-6 sm:p-8 space-y-3">
+              <div className="w-12 h-12 rounded-xl bg-[#E6A500] text-black flex items-center justify-center">
                 <Scale className="w-6 h-6 text-black" />
               </div>
-              <h3 className="text-[24px] font-extrabold text-black">{pol.title}</h3>
-              <p className="text-[18px] text-black leading-relaxed">{pol.desc}</p>
+              <h3 className="text-xl sm:text-2xl font-black text-black leading-snug">{pol.title}</h3>
+              <p className="text-sm sm:text-base text-black/80 font-medium leading-relaxed">{pol.desc}</p>
             </div>
           ))}
         </section>
-        <SectionSeparator label="Downloadable Policy Documents" />
+
+        <SectionSeparator label={lang === 'sw' ? 'Nyaraka za Sera Zinazoweza Kupakuliwa' : 'Downloadable Policy Documents'} />
         {policyDocs.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
             {policyDocs.map((pub: any) => {
               const tr =
                 (pub.publication_translations || []).find((t: any) => t.language === lang) ||
@@ -3236,24 +3267,27 @@ export function ResourcesView({
               return (
                 <div
                   key={pub.id}
-                  className="bg-white border border-gray-200 shadow-none p-7 flex items-start justify-between gap-4"
+                  className="bg-white border-2 border-black/10 hover:border-[#E6A500] rounded-2xl shadow-sm hover:shadow-lg transition p-6 sm:p-7 flex flex-col justify-between gap-4"
                 >
                   <div className="space-y-2">
-                    <span className="px-3 py-1 bg-[#E6A500] text-black font-bold uppercase text-[15px] inline-block">
-                      {pub.publication_category} Â· {pub.publication_year}
+                    <span className="px-3 py-1 bg-[#E6A500] text-black font-extrabold uppercase text-xs tracking-wider rounded-md inline-block">
+                      {pub.publication_category} · {pub.publication_year}
                     </span>
-                    <h3 className="font-extrabold text-[24px] text-black">{tr.title}</h3>
-                    <p className="text-[18px] text-black">{tr.summary}</p>
+                    <h3 className="font-black text-xl sm:text-2xl text-black leading-snug">{tr.title}</h3>
+                    <p className="text-sm sm:text-base text-black/80 font-medium leading-relaxed">{tr.summary}</p>
                   </div>
                   {docUrl && (
-                    <a
-                      href={docUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="px-4 py-2.5 bg-[#E6A500] text-black font-extrabold text-[18px] flex items-center gap-2 shrink-0"
-                    >
-                      <Download className="w-5 h-5 text-black" /> PDF
-                    </a>
+                    <div className="pt-2">
+                      <a
+                        href={docUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="bao-btn px-5 py-2.5 bg-black text-white hover:bg-neutral-900 font-extrabold text-sm inline-flex items-center gap-2 rounded-lg"
+                      >
+                        <Download className="w-4 h-4 text-[#E6A500]" />
+                        <span>Download PDF</span>
+                      </a>
+                    </div>
                   )}
                 </div>
               );
@@ -3261,67 +3295,59 @@ export function ResourcesView({
           </div>
         ) : (
           <EmptyStateCard
-            title="Policy PDFs & Guidelines"
-            description="Official signed PDF policy documents uploaded in the CMS will appear here for public download."
+            title={lang === 'sw' ? 'Nyaraka za Sera na Miongozo' : 'Policy PDFs & Guidelines'}
+            description={lang === 'sw' ? 'Nyaraka rasmi za sera zilizopakiwa katika mfumo zitaonekana hapa kwa ajili ya kupakuliwa na umma.' : 'Official signed PDF policy documents uploaded in the CMS will appear here for public download.'}
             icon={ShieldCheck}
           />
         )}
-      </div>
+      </StandardPageTemplate>
     );
   }
+
   // 4. STANDALONE PAGE: /resources/publications (Publications)
   const pubSettings = siteData.settings?.publications_page_settings || siteData.settings?.resources_page_settings || {};
-  const pubHeroBadge = pubSettings.hero_badge || 'Resources · Reports & Research';
-  const pubHeroTitle = pubSettings.hero_title || 'Publications, Annual Reports & Research Studies';
-  const pubLeadDescription = pubSettings.lead_description || 'Access Babawatoto Organization’s annual reports, MEL evaluation studies, policy briefs, and community research publications.';
-  const pubHeroImage = pubSettings.hero_image || pubSettings.hero_banner_image || '/media/public/images/programmes/kizazi.webp';
+  const cmsPage = (siteData.pages || []).find((p: any) => (p.page_key === 'publications' || p.slug === 'publications') && p.status !== 'archived');
+  const tr = (cmsPage?.page_translations || []).find((t: any) => t.language === lang) || (cmsPage?.page_translations || [])[0] || {};
+  const pubHeroBadge = pubSettings.hero_badge || tr.hero_tag || (lang === 'sw' ? 'Rasilimali · Ripoti na Utafiti' : 'Resources · Reports & Research');
+  const pubHeroTitle = pubSettings.hero_title || tr.title || (lang === 'sw' ? 'Machapisho, Ripoti za Mwaka na Tafiti' : 'Publications, Annual Reports & Research Studies');
+  const pubLeadDescription = pubSettings.lead_description || tr.subtitle || (lang === 'sw' ? 'Pata ripoti za mwaka za Shirika la Babawatoto, tathmini za MEL, muhtasari wa sera, na machapisho ya utafiti wa kijamii.' : 'Access Babawatoto Organization’s annual reports, MEL evaluation studies, policy briefs, and community research publications.');
+  const pubHeroImage = pubSettings.hero_image || pubSettings.hero_banner_image || resolveMediaUrl(cmsPage?.featured_media_id, media) || '/media/public/images/programmes/kizazi.webp';
 
   const filteredPubs = publications.filter((p: any) => {
-    const tr = (p.publication_translations || [])[0] || {};
-    return !search || `${tr.title} ${tr.summary}`.toLowerCase().includes(search.toLowerCase());
+    const trPub = (p.publication_translations || [])[0] || {};
+    return !search || `${trPub.title} ${trPub.summary}`.toLowerCase().includes(search.toLowerCase());
   });
+
   return (
-    <div className="max-w-7xl mx-auto px-4 py-12 space-y-14">
-      <section className="bg-[#E6A500] text-black p-8 lg:p-14 grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
-        <div className="lg:col-span-7 space-y-5">
-          <span className="px-3.5 py-1.5 bg-white text-black font-extrabold uppercase tracking-wider text-[15px] inline-block">
-            Resources Â· Reports & Research
-          </span>
-          <h1 className="text-[38px] sm:text-[48px] font-extrabold text-black leading-tight">
-            Publications, Annual Reports & Research Studies
-          </h1>
-          <p className="text-[20px] text-black font-medium leading-relaxed">
-            Access Babawatoto Organizationâs annual reports, MEL evaluation studies, policy briefs,
-            and community research publications.
-          </p>
-        </div>
-        <div className="lg:col-span-5">
-          <img
-            src={pubHeroImage}
-            alt={pubHeroTitle}
-            className="w-full h-80 object-cover border-4 border-white shadow-none"
-          />
-        </div>
-      </section>
-      <SectionSeparator label="Search & Download Publications" />
+    <StandardPageTemplate
+      pageTitle={pubHeroTitle}
+      pageBadge={pubHeroBadge}
+      heroImage={pubHeroImage}
+      leadDescription={pubLeadDescription}
+      siteData={siteData}
+      navigate={navigate}
+      hideNews={false}
+    >
+      <SectionSeparator label={lang === 'sw' ? 'Tafuta na Pakua Machapisho' : 'Search & Download Publications'} />
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <h2 className="text-[30px] font-extrabold text-black">
-          Published Reports & Research ({filteredPubs.length})
+        <h2 className="text-2xl sm:text-3xl font-black text-black">
+          {lang === 'sw' ? `Ripoti na Tafiti Zilizochapishwa (${filteredPubs.length})` : `Published Reports & Research (${filteredPubs.length})`}
         </h2>
         <div className="relative w-full sm:w-80">
           <Search className="w-5 h-5 text-black absolute left-3.5 top-3.5" />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search publications..."
-            className="w-full pl-11 pr-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:outline-hidden focus:border-[#E6A500] text-[18px] text-black"
+            placeholder={lang === 'sw' ? 'Tafuta ripoti...' : 'Search publications...'}
+            className="w-full pl-11 pr-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:outline-hidden focus:border-[#E6A500] text-base text-black"
           />
         </div>
       </div>
+
       {filteredPubs.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
           {filteredPubs.map((pub: any) => {
-            const tr =
+            const trPub =
               (pub.publication_translations || []).find((t: any) => t.language === lang) ||
               (pub.publication_translations || [])[0] ||
               {};
@@ -3329,24 +3355,27 @@ export function ResourcesView({
             return (
               <div
                 key={pub.id}
-                className="bg-white border border-gray-200 shadow-none p-7 flex items-start justify-between gap-4"
+                className="bg-white border-2 border-black/10 hover:border-[#E6A500] rounded-2xl shadow-sm hover:shadow-lg transition p-6 sm:p-7 flex flex-col justify-between gap-4"
               >
                 <div className="space-y-2">
-                  <span className="px-3 py-1 bg-[#E6A500] text-black font-bold uppercase text-[15px] inline-block">
-                    {pub.publication_category} Â· {pub.publication_year}
+                  <span className="px-3 py-1 bg-[#E6A500] text-black font-extrabold uppercase text-xs tracking-wider rounded-md inline-block">
+                    {pub.publication_category} · {pub.publication_year}
                   </span>
-                  <h3 className="font-extrabold text-[24px] text-black">{tr.title}</h3>
-                  <p className="text-[18px] text-black leading-relaxed">{tr.summary}</p>
+                  <h3 className="font-black text-xl sm:text-2xl text-black leading-snug">{trPub.title}</h3>
+                  <p className="text-sm sm:text-base text-black/80 font-medium leading-relaxed">{trPub.summary}</p>
                 </div>
                 {docUrl && (
-                  <a
-                    href={docUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="bao-btn px-4 py-2.5 text-black font-extrabold text-[18px] flex items-center gap-2 shrink-0"
-                  >
-                    <Download className="w-5 h-5 text-black" /> PDF
-                  </a>
+                  <div className="pt-2">
+                    <a
+                      href={docUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="bao-btn px-5 py-2.5 bg-black text-white hover:bg-neutral-900 font-extrabold text-sm inline-flex items-center gap-2 rounded-lg"
+                    >
+                      <Download className="w-4 h-4 text-[#E6A500]" />
+                      <span>Download PDF</span>
+                    </a>
+                  </div>
                 )}
               </div>
             );
@@ -3359,9 +3388,10 @@ export function ResourcesView({
           icon={FileText}
         />
       )}
-    </div>
+    </StandardPageTemplate>
   );
 }
+
 /**
  * Standalone Get Involved Page
  */
