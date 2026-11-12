@@ -37,6 +37,9 @@ const SUPABASE_ANON_KEY =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImprcG9wZmNxa3JwbXR4Y2FtcWR4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQxMjY3NTUsImV4cCI6MjEwOTcwMjc1NX0.eNAASSE3NKBUdYcJdZ1bYczzY_v3JxuPAomSB4B0Sjs';
 
 const candidateRoots = [
+  path.resolve(process.cwd(), 'dist/media'),
+  path.resolve(__dirname, 'media'),
+  path.resolve(__dirname, '../dist/media'),
   path.resolve(process.cwd(), '../../bao-cms-storage'),
   path.resolve(__dirname, '../../../bao-cms-storage'),
   path.resolve(__dirname, '../../bao-cms-storage'),

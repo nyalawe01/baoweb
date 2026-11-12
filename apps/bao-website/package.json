@@ -10,7 +10,7 @@
     "build:client": "vite build",
     "build:server": "tsc -p tsconfig.server.json",
     "build": "npm run build:client && npm run build:server",
-    "postbuild": "node -e \"const fs=require('fs'); if(fs.existsSync('dist/client')) fs.cpSync('dist/client', 'dist', {recursive:true});\"",
+    "postbuild": "node -e \"const fs=require('fs'); if(fs.existsSync('dist/client')) fs.cpSync('dist/client', 'dist', {recursive:true}); const p='../../bao-cms-storage/public'; if(fs.existsSync(p)) fs.cpSync(p, 'dist/media/public', {recursive:true});\"",
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit"
   },
