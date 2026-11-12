@@ -37,6 +37,7 @@ import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge';
 import { Blog7 } from '@/components/ui/blog7';
 import { StandardPageTemplate } from './StandardPageTemplate.js';
+import { YouTubeEmbed } from './YouTubeEmbed.js';
 
 export function EmptyStateCard({
   title,
@@ -385,6 +386,11 @@ export function HomeView({
                 <img
                   src={heroBanners[0]?.image_url || '/media/public/images/organization/hero1.webp'}
                   alt={heroBanners[0]?.title || 'Hero Banner Image'}
+                  width={800}
+                  height={600}
+                  loading="eager"
+                  fetchPriority="high"
+                  decoding="async"
                   className="w-full h-full object-cover"
                 />
               </div>
@@ -407,7 +413,7 @@ export function HomeView({
             className="flex overflow-x-auto snap-x snap-mandatory scroll-smooth no-scrollbar"
             style={{ scrollbarWidth: 'none' }}
           >
-            {heroBanners.map((banner) => (
+            {heroBanners.map((banner, idx) => (
               <div
                 key={banner.id}
                 className="relative min-w-full w-full shrink-0 snap-center overflow-hidden"
@@ -457,6 +463,11 @@ export function HomeView({
                       <img
                         src={banner.image_url || '/media/public/images/organization/hero1.webp'}
                         alt={banner.title || 'Hero Banner Image'}
+                        width={800}
+                        height={600}
+                        loading={idx === 0 ? 'eager' : 'lazy'}
+                        fetchPriority={idx === 0 ? 'high' : 'auto'}
+                        decoding="async"
                         className="w-full h-full object-cover"
                       />
                     </div>
@@ -855,14 +866,10 @@ export function HomeView({
 
             <div className="lg:col-span-7">
               <div className="aspect-video rounded-2xl overflow-hidden bg-white border-4 border-white shadow-none">
-                <iframe
+                <YouTubeEmbed
                   key={videos[videoIdx]?.id}
-                  src={`https://www.youtube.com/embed/${videos[videoIdx]?.id}?rel=0&enablejsapi=1`}
+                  videoId={videos[videoIdx]?.id}
                   title={videos[videoIdx]?.title}
-                  className="w-full h-full"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  referrerPolicy="strict-origin-when-cross-origin"
-                  allowFullScreen
                 />
               </div>
             </div>
@@ -1268,7 +1275,7 @@ export function HomeView({
                               {c.name}
                             </h3>
                             {c.category && (
-                              <p className="text-xs text-[#d49700] font-bold uppercase tracking-wide line-clamp-1">
+                              <p className="text-xs text-[#7A5200] font-bold uppercase tracking-wide line-clamp-1">
                                 {c.category}
                               </p>
                             )}
@@ -1497,13 +1504,9 @@ export function ProgrammesView({
                   : ['pdx8DWYJM_o', 'FgXXMyMLF9k']
                 ).map((vid: string) => (
                   <div key={vid} className="aspect-video overflow-hidden bg-white border-4 border-white">
-                    <iframe
-                      src={`https://www.youtube.com/embed/${vid}?rel=0&enablejsapi=1`}
-                      title={vid}
-                      className="w-full h-full"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                      referrerPolicy="strict-origin-when-cross-origin"
-                      allowFullScreen
+                    <YouTubeEmbed
+                      videoId={vid}
+                      title={`Field Spotlight Video ${vid}`}
                     />
                   </div>
                 ))}

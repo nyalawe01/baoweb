@@ -250,6 +250,10 @@ export function Header({
           <img
             src="/logo.png"
             alt="Babawatoto Organization Logo"
+            width={48}
+            height={48}
+            loading="eager"
+            fetchPriority="high"
             className="w-12 h-12 object-contain bg-white"
           />
           <div>
@@ -609,6 +613,7 @@ export function Footer({
   return (
     <footer className="bg-[#E6A500] text-black pt-14 pb-8 border-t-4 border-white">
       <div className="max-w-7xl mx-auto px-4 space-y-10">
+        <h2 className="sr-only">Footer Information & Navigation</h2>
         {/* ROW 1: 4 Columns (1: Logo Only | 2: Useful Links | 3: Our Address | 4: Get in Touch) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 pb-10 border-b border-white/60 items-start">
           {/* Column 1: Only the Logo */}
@@ -621,6 +626,10 @@ export function Footer({
               <img
                 src="/logo.png"
                 alt="Babawatoto Organization Logo"
+                width={144}
+                height={144}
+                loading="lazy"
+                decoding="async"
                 className="w-36 h-36 bg-white p-3 object-contain"
               />
             </button>
@@ -628,9 +637,9 @@ export function Footer({
 
           {/* Column 2: Useful Links */}
           <div className="space-y-2.5 text-xs">
-            <h4 className="font-bold text-sm text-black uppercase tracking-wider mb-3">
+            <h3 className="font-bold text-sm text-black uppercase tracking-wider mb-3">
               Useful Links
-            </h4>
+            </h3>
             {usefulLinks.map((l: any) => (
               l.isExternal ? (
                 <a
@@ -665,9 +674,9 @@ export function Footer({
 
           {/* Column 3: Our Address */}
           <div className="space-y-3 text-xs">
-            <h4 className="font-bold text-sm text-black uppercase tracking-wider mb-3">
+            <h3 className="font-bold text-sm text-black uppercase tracking-wider mb-3">
               Our Address
-            </h4>
+            </h3>
             <div className="flex items-start gap-2.5 text-black leading-relaxed">
               <MapPin className="w-4 h-4 text-black shrink-0 mt-0.5" />
               <div className="space-y-1.5 break-normal hyphens-none">
@@ -700,9 +709,9 @@ export function Footer({
 
           {/* Column 4: Get in Touch (Contact Us) */}
           <div className="space-y-3 text-xs">
-            <h4 className="font-bold text-sm text-black uppercase tracking-wider mb-3">
+            <h3 className="font-bold text-sm text-black uppercase tracking-wider mb-3">
               Get in Touch (Contact Us)
-            </h4>
+            </h3>
             <div className="space-y-2 text-black font-medium">
               {phonesList.map((p, idx) => (
                 <a

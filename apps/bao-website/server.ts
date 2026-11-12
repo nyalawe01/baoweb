@@ -97,7 +97,7 @@ app.get('/media/public/*', async (req: Request, res: Response) => {
           if (remoteRes.ok) {
             const contentType = remoteRes.headers.get('content-type') || 'application/octet-stream';
             res.setHeader('Content-Type', contentType);
-            res.setHeader('Cache-Control', 'public, max-age=86400');
+            res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
             const arrayBuffer = await remoteRes.arrayBuffer();
             res.send(Buffer.from(arrayBuffer));
             return;
@@ -110,7 +110,7 @@ app.get('/media/public/*', async (req: Request, res: Response) => {
       res.status(404).json({ error: 'Media file not found' });
       return;
     }
-    res.setHeader('Cache-Control', 'public, max-age=86400');
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
     res.sendFile(resolved);
   } catch {
     res.status(400).json({ error: 'Invalid media path' });
@@ -198,100 +198,147 @@ app.get('/api/public/youtube-videos', async (_req: Request, res: Response) => {
   });
 });
 
+let cachedSiteData: any = null;
+let lastSiteDataFetchTime = 0;
+const SITE_DATA_CACHE_TTL = 30 * 1000; // 30-second TTL
+
+export async function getPublicSiteData(force = false) {
+  const now = Date.now();
+  if (!force && cachedSiteData && now - lastSiteDataFetchTime < SITE_DATA_CACHE_TTL) {
+    return cachedSiteData;
+  }
+
+  const [
+    settingsRes,
+    menusRes,
+    pagesRes,
+    progRes,
+    projRes,
+    storiesRes,
+    newsRes,
+    partnersRes,
+    teamRes,
+    pubsRes,
+    indRes,
+    mediaRes,
+    youtubeVideos,
+  ] = await Promise.all([
+    supabase.from('site_settings').select('*'),
+    supabase.from('menus').select('*, menu_items(*)'),
+    supabase.from('pages').select('*, page_translations(*)').neq('status', 'archived'),
+    supabase
+      .from('programmes')
+      .select('*, programme_translations(*)')
+      .neq('status', 'archived')
+      .order('display_order'),
+    supabase
+      .from('projects')
+      .select('*, project_translations(*)')
+      .neq('status', 'archived')
+      .order('is_featured', { ascending: false })
+      .order('display_order', { ascending: true })
+      .order('created_at', { ascending: false }),
+    supabase
+      .from('stories')
+      .select('*, story_translations(*)')
+      .neq('status', 'archived')
+      .order('published_at', { ascending: false }),
+    supabase
+      .from('articles')
+      .select('*, article_translations(*)')
+      .eq('content_type', 'news')
+      .neq('status', 'archived')
+      .order('published_at', { ascending: false }),
+    supabase
+      .from('partners')
+      .select('*')
+      .eq('is_active', true)
+      .order('display_order'),
+    supabase
+      .from('team_members')
+      .select('*')
+      .neq('status', 'archived')
+      .order('display_order'),
+    supabase
+      .from('resources')
+      .select('*')
+      .neq('status', 'archived')
+      .order('publication_year', { ascending: false }),
+    supabase
+      .from('impact_indicators')
+      .select('*, impact_records(*)')
+      .neq('status', 'archived')
+      .order('display_order'),
+    supabase.from('media_assets').select('*').eq('visibility', 'public'),
+    fetchBaoYoutubeVideos(),
+  ]);
+
+  const settingsMap: Record<string, any> = {};
+  for (const s of settingsRes.data || []) {
+    const k = s.key || s.setting_key;
+    const v = s.value ?? s.setting_value;
+    if (k) settingsMap[k] = v;
+  }
+
+  cachedSiteData = {
+    settings: settingsMap,
+    menus: menusRes.data || [],
+    pages: pagesRes.data || [],
+    programmes: progRes.data || [],
+    projects: projRes.data || [],
+    stories: storiesRes.data || [],
+    news: newsRes.data || [],
+    events: [],
+    partners: partnersRes.data || [],
+    team: teamRes.data || [],
+    publications: pubsRes.data || [],
+    indicators: indRes.data || [],
+    media: mediaRes.data || [],
+    youtubeVideos,
+  };
+  lastSiteDataFetchTime = now;
+  return cachedSiteData;
+}
+
+// Agentic Resource Discovery & LLM endpoints
+app.get('/.well-known/ard.json', (_req: Request, res: Response) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.setHeader('Cache-Control', 'public, max-age=86400');
+  res.json({
+    name: 'Babawatoto Organization',
+    description: 'Babawatoto Centre for Children and Youth Trust (BAO) empowers street-connected children, youth, and families across Tanzania.',
+    url: 'https://babawatoto.or.tz',
+    documentation: 'https://babawatoto.or.tz/llms.txt',
+    version: '1.0.0',
+  });
+});
+
+app.get('/llms.txt', (_req: Request, res: Response) => {
+  res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+  res.setHeader('Cache-Control', 'public, max-age=86400');
+  const candidateLlms = [
+    path.resolve(process.cwd(), 'public/llms.txt'),
+    path.resolve(__dirname, '../public/llms.txt'),
+    path.resolve(__dirname, 'public/llms.txt'),
+    path.resolve(__dirname, '../../apps/bao-website/public/llms.txt'),
+  ];
+  const found = candidateLlms.find((f) => fs.existsSync(f));
+  if (found) {
+    res.sendFile(found);
+  } else {
+    res.send('# Babawatoto Organization (BAO)\n\n> Babawatoto Centre for Children and Youth Trust (BAO) is a registered non-governmental organization in Tanzania dedicated to protecting vulnerable street-connected children, restoring families, and empowering youth through education, creative arts therapy, and vocational livelihoods.\n\n## Core Initiatives\n- [Child Protection & Street Outreach](https://babawatoto.or.tz/programmes/child-protection)\n- [MEMKWA Catch-Up Education](https://babawatoto.or.tz/programmes/memkwa-education)\n- [HEART & Creative Arts](https://babawatoto.or.tz/programmes/heart-arts)\n- [Vocational Training & Livelihoods](https://babawatoto.or.tz/programmes/vocational-skills)\n');
+  }
+});
+
 // Public site data endpoint (only published / active records enforced by RLS & query filters)
-app.get('/api/public/site-data', async (_req: Request, res: Response) => {
+app.get('/api/public/site-data', async (req: Request, res: Response) => {
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   res.setHeader('Pragma', 'no-cache');
   res.setHeader('Expires', '0');
   try {
-    const [
-      settingsRes,
-      menusRes,
-      pagesRes,
-      progRes,
-      projRes,
-      storiesRes,
-      newsRes,
-      partnersRes,
-      teamRes,
-      pubsRes,
-      indRes,
-      mediaRes,
-      youtubeVideos,
-    ] = await Promise.all([
-      supabase.from('site_settings').select('*'),
-      supabase.from('menus').select('*, menu_items(*)'),
-      supabase.from('pages').select('*, page_translations(*)').neq('status', 'archived'),
-      supabase
-        .from('programmes')
-        .select('*, programme_translations(*)')
-        .neq('status', 'archived')
-        .order('display_order'),
-      supabase
-        .from('projects')
-        .select('*, project_translations(*)')
-        .neq('status', 'archived')
-        .order('is_featured', { ascending: false })
-        .order('display_order', { ascending: true })
-        .order('created_at', { ascending: false }),
-      supabase
-        .from('stories')
-        .select('*, story_translations(*)')
-        .neq('status', 'archived')
-        .order('published_at', { ascending: false }),
-      supabase
-        .from('articles')
-        .select('*, article_translations(*)')
-        .eq('content_type', 'news')
-        .neq('status', 'archived')
-        .order('published_at', { ascending: false }),
-      supabase
-        .from('partners')
-        .select('*')
-        .eq('is_active', true)
-        .order('display_order'),
-      supabase
-        .from('team_members')
-        .select('*')
-        .neq('status', 'archived')
-        .order('display_order'),
-      supabase
-        .from('resources')
-        .select('*')
-        .neq('status', 'archived')
-        .order('publication_year', { ascending: false }),
-      supabase
-        .from('impact_indicators')
-        .select('*, impact_records(*)')
-        .neq('status', 'archived')
-        .order('display_order'),
-      supabase.from('media_assets').select('*').eq('visibility', 'public'),
-      fetchBaoYoutubeVideos(),
-    ]);
-
-    const settingsMap: Record<string, any> = {};
-    for (const s of settingsRes.data || []) {
-      const k = s.key || s.setting_key;
-      const v = s.value ?? s.setting_value;
-      if (k) settingsMap[k] = v;
-    }
-
-    res.json({
-      settings: settingsMap,
-      menus: menusRes.data || [],
-      pages: pagesRes.data || [],
-      programmes: progRes.data || [],
-      projects: projRes.data || [],
-      stories: storiesRes.data || [],
-      news: newsRes.data || [],
-      events: [],
-      partners: partnersRes.data || [],
-      team: teamRes.data || [],
-      publications: pubsRes.data || [],
-      indicators: indRes.data || [],
-      media: mediaRes.data || [],
-      youtubeVideos,
-    });
+    const force = Boolean(req.query._t);
+    const data = await getPublicSiteData(force);
+    res.json(data);
   } catch (err: any) {
     res.status(500).json({ error: err.message || 'Failed to load public site data' });
   }
@@ -496,7 +543,18 @@ async function startServer() {
     // Mount all valid static asset directories
     for (const dir of candidateClientDists) {
       if (fs.existsSync(dir)) {
-        app.use(express.static(dir, { index: false, maxAge: '1d' }));
+        app.use(
+          express.static(dir, {
+            index: false,
+            maxAge: '365d',
+            immutable: true,
+            setHeaders: (res, filePath) => {
+              if (filePath.endsWith('.html')) {
+                res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
+              }
+            },
+          })
+        );
       }
     }
 
@@ -524,14 +582,26 @@ async function startServer() {
       }
     }
 
-    app.get('*', (req: Request, res: Response) => {
+    app.get('*', async (req: Request, res: Response) => {
       if (indexFile && fs.existsSync(indexFile)) {
         let html = fs.readFileSync(indexFile, 'utf-8');
+        let initialDataScript = '';
+        try {
+          const siteData = await getPublicSiteData();
+          if (siteData) {
+            const safeJson = JSON.stringify(siteData).replace(/<\/script/gi, '<\\/script');
+            initialDataScript = `<script id="__BAO_DATA__">window.__INITIAL_DATA__ = ${safeJson};</script>`;
+          }
+        } catch (e) {
+          console.warn('[bao-website] Failed to pre-inject initial site data:', e);
+        }
+
         html = html.replace(
           '<!--SEO_HEAD-->',
-          `<link rel="canonical" href="https://babawatoto.or.tz${req.originalUrl}" /><script type="application/ld+json">${ngoJsonLd}</script>`
+          `<link rel="canonical" href="https://babawatoto.or.tz${req.originalUrl}" /><script type="application/ld+json">${ngoJsonLd}</script>${initialDataScript}`
         );
         res.setHeader('Content-Type', 'text/html');
+        res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
         res.send(html);
       } else {
         res.status(200).send('Babawatoto Organization Public Website API is running.');

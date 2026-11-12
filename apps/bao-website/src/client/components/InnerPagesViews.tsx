@@ -55,6 +55,7 @@ import {
   resolveMediaUrl,
   DEFAULT_PRIORITY_PROJECTS,
 } from './HomeAndProgrammesViews.js';
+import { YouTubeEmbed } from './YouTubeEmbed.js';
 /**
  * Animated Counter Component for Impact Metrics
  */
@@ -586,13 +587,9 @@ export function DynamicCmsPageBlocks({
                 {blk.data.title || 'Featured Documentary Video'}
               </h3>
               <div className="aspect-video bg-white border-4 border-white">
-                <iframe
-                  src={`https://www.youtube.com/embed/${blk.data.youtube_id}?rel=0&enablejsapi=1`}
+                <YouTubeEmbed
+                  videoId={blk.data.youtube_id}
                   title={blk.data.title || 'Video'}
-                  className="w-full h-full"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  referrerPolicy="strict-origin-when-cross-origin"
-                  allowFullScreen
                 />
               </div>
             </div>
@@ -687,13 +684,9 @@ function MediaAndVideoShowcaseSection({
         </div>
         <div className="lg:col-span-7">
           <div className="aspect-video bg-white border-4 border-white shadow-none overflow-hidden">
-            <iframe
-              src={`https://www.youtube.com/embed/${videoId}?rel=0&enablejsapi=1`}
+            <YouTubeEmbed
+              videoId={videoId}
               title={videoTitle}
-              className="w-full h-full"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-              referrerPolicy="strict-origin-when-cross-origin"
-              allowFullScreen
             />
           </div>
         </div>
@@ -3086,13 +3079,9 @@ export function ResourcesView({
           ].map((vid) => (
             <div key={vid.id} className="bg-white border-2 border-black/10 hover:border-[#E6A500] rounded-2xl shadow-sm hover:shadow-lg transition overflow-hidden">
               <div className="aspect-video bg-black">
-                <iframe
-                  src={`https://www.youtube.com/embed/${vid.id}?rel=0&enablejsapi=1`}
+                <YouTubeEmbed
+                  videoId={vid.id}
                   title={vid.title}
-                  className="w-full h-full"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  referrerPolicy="strict-origin-when-cross-origin"
-                  allowFullScreen
                 />
               </div>
               <div className="p-5 space-y-2">

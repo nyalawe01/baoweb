@@ -32,13 +32,20 @@ function getCachedSiteData() {
   return null;
 }
 
+function getInitialData() {
+  if (typeof window !== 'undefined' && (window as any).__INITIAL_DATA__) {
+    return (window as any).__INITIAL_DATA__;
+  }
+  return getCachedSiteData();
+}
+
 export function App() {
   const [lang, setLang] = useState<LanguageCode>('en');
   const [currentPath, setCurrentPath] = useState<string>(window.location.pathname || '/');
   
-  const cachedData = useRef(getCachedSiteData()).current;
+  const initialData = useRef(getInitialData()).current;
   const [siteData, setSiteData] = useState<any>(
-    cachedData || {
+    initialData || {
       settings: {},
       menus: [],
       pages: [],
@@ -55,7 +62,7 @@ export function App() {
     }
   );
   
-  const [loading, setLoading] = useState<boolean>(!cachedData);
+  const [loading, setLoading] = useState<boolean>(!initialData);
   const [isSyncing, setIsSyncing] = useState(false);
   const isFetchingRef = useRef(false);
   const lastFocusFetchRef = useRef<number>(Date.now());

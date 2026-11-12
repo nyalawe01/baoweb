@@ -1,0 +1,16 @@
+# Babawatoto Organization (BAO)
+
+> Babawatoto Centre for Children and Youth Trust (BAO) is a registered non-governmental organization in Tanzania dedicated to protecting vulnerable street-connected children, restoring families, and empowering youth through education, creative arts therapy, and vocational livelihoods.
+
+## Core Initiatives
+- [Child Protection & Street Outreach](https://babawatoto.or.tz/programmes/child-protection): Daytime street outreach, crisis identification, family tracing, and reunification.
+- [MEMKWA Catch-Up Education](https://babawatoto.or.tz/programmes/memkwa-education): Accelerated primary and secondary catch-up learning for out-of-school adolescents.
+- [HEART & Creative Arts](https://babawatoto.or.tz/programmes/heart-arts): Healing and Education Through the Arts (acrobatics, theatre, music, and psychosocial resilience).
+- [Vocational Training & Livelihoods](https://babawatoto.or.tz/programmes/vocational-skills): Skills acquisition, apprenticeships, and youth enterprise development.
+
+## Organization Details
+- **Registration**: Registered Trust in the United Republic of Tanzania
+- **Headquarters**: Dar es Salaam, Tanzania
+- **Website**: https://babawatoto.or.tz
+- **CMS**: https://cms.babawatoto.or.tz
+- **Contact**: info@babawatoto.or.tz
