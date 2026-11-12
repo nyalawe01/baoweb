@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import os from 'node:os';
 import path from 'node:path';
-import { existsSync } from 'node:fs';
+import fs, { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -862,42 +862,54 @@ export function createCmsApp() {
   // 7. SERVE COMPILED REACT CMS SPA IN PRODUCTION
   // ---------------------------------------------------------------------------
   const candidateClientDists = [
-    path.resolve(__dirname, 'client'),
-    path.resolve(__dirname),
+    path.resolve(__dirname, 'client'), // when running from dist/server.js (__dirname === dist) -> dist/client
+    path.resolve(__dirname),           // when running from dist/server.js (__dirname === dist)
+    path.resolve(__dirname, 'dist/client'), // when running from apps/bao-cms/server.ts
+    path.resolve(__dirname, 'dist'),        // when running from apps/bao-cms/server.ts
     path.resolve(process.cwd(), 'dist/client'),
     path.resolve(process.cwd(), 'dist'),
     path.resolve(process.cwd(), 'apps/bao-cms/dist/client'),
     path.resolve(process.cwd(), 'apps/bao-cms/dist'),
-    path.resolve(__dirname, 'dist/client'),
     path.resolve(__dirname, '../dist/client'),
+    path.resolve(__dirname, '../dist'),
   ];
-  const clientDistPath =
-    candidateClientDists.find((d) => existsSync(path.join(d, 'index.html'))) ||
-    candidateClientDists[0];
 
-  app.use(express.static(__dirname));
-  app.use(express.static(path.join(__dirname, 'client')));
-  app.use(express.static(clientDistPath));
-  app.use('/cms', express.static(__dirname));
-  app.use('/cms', express.static(path.join(__dirname, 'client')));
-  app.use('/cms', express.static(clientDistPath));
+  // Mount all valid static asset directories for root and /cms
+  for (const dir of candidateClientDists) {
+    if (existsSync(dir)) {
+      app.use(express.static(dir, { index: false, maxAge: '1d' }));
+      app.use('/cms', express.static(dir, { index: false, maxAge: '1d' }));
+    }
+  }
+
+  // Find the compiled production index.html (ensure it is NOT the uncompiled dev source HTML)
+  let indexHtml = '';
+  for (const dir of candidateClientDists) {
+    const cand = path.join(dir, 'index.html');
+    if (existsSync(cand)) {
+      const content = readFileSync(cand, 'utf-8');
+      if (content.includes('/assets/') || !content.includes('/src/client/main.tsx')) {
+        indexHtml = cand;
+        break;
+      }
+    }
+  }
+  if (!indexHtml) {
+    for (const dir of candidateClientDists) {
+      const cand = path.join(dir, 'index.html');
+      if (existsSync(cand)) {
+        indexHtml = cand;
+        break;
+      }
+    }
+  }
 
   app.get('*', (req: Request, res: Response, next: NextFunction) => {
     if (req.path.startsWith('/api/') || req.path.startsWith('/media/')) {
       next();
       return;
     }
-    let indexHtml = path.join(clientDistPath, 'index.html');
-    if (!existsSync(indexHtml)) {
-      for (const dir of candidateClientDists) {
-        const cand = path.join(dir, 'index.html');
-        if (existsSync(cand)) {
-          indexHtml = cand;
-          break;
-        }
-      }
-    }
-    if (existsSync(indexHtml)) {
+    if (indexHtml && existsSync(indexHtml)) {
       res.sendFile(indexHtml);
     } else {
       res.status(200).send('Babawatoto Organization (BAO) CMS API is running.');

@@ -481,34 +481,51 @@ async function startServer() {
     }
   } else {
     const candidateClientDists = [
-      path.resolve(__dirname, 'client'),
-      path.resolve(__dirname),
+      path.resolve(__dirname, 'client'), // when running from dist/server.js, __dirname is dist -> dist/client
+      path.resolve(__dirname),           // when running from dist/server.js, __dirname is dist
+      path.resolve(__dirname, 'dist/client'), // when running from apps/bao-website/server.ts
+      path.resolve(__dirname, 'dist'),        // when running from apps/bao-website/server.ts
       path.resolve(process.cwd(), 'dist/client'),
       path.resolve(process.cwd(), 'dist'),
       path.resolve(process.cwd(), 'apps/bao-website/dist/client'),
       path.resolve(process.cwd(), 'apps/bao-website/dist'),
-      path.resolve(__dirname, 'dist/client'),
       path.resolve(__dirname, '../dist/client'),
+      path.resolve(__dirname, '../dist'),
     ];
-    const clientDist =
-      candidateClientDists.find((d) => fs.existsSync(path.join(d, 'index.html'))) ||
-      candidateClientDists[0];
 
-    app.use(express.static(__dirname, { index: false }));
-    app.use(express.static(path.join(__dirname, 'client'), { index: false }));
-    app.use(express.static(clientDist, { index: false }));
-    app.get('*', (req: Request, res: Response) => {
-      let indexFile = path.join(clientDist, 'index.html');
-      if (!fs.existsSync(indexFile)) {
-        for (const dir of candidateClientDists) {
-          const cand = path.join(dir, 'index.html');
-          if (fs.existsSync(cand)) {
-            indexFile = cand;
-            break;
-          }
+    // Mount all valid static asset directories
+    for (const dir of candidateClientDists) {
+      if (fs.existsSync(dir)) {
+        app.use(express.static(dir, { index: false, maxAge: '1d' }));
+      }
+    }
+
+    // Locate the compiled production index.html (ensure it is NOT the uncompiled dev source HTML)
+    let indexFile = '';
+    for (const dir of candidateClientDists) {
+      const cand = path.join(dir, 'index.html');
+      if (fs.existsSync(cand)) {
+        const content = fs.readFileSync(cand, 'utf-8');
+        // A built index.html references /assets/ and does not contain raw /src/client/main.tsx
+        if (content.includes('/assets/') || !content.includes('/src/client/main.tsx')) {
+          indexFile = cand;
+          break;
         }
       }
-      if (fs.existsSync(indexFile)) {
+    }
+    // Fallback if no build marker found
+    if (!indexFile) {
+      for (const dir of candidateClientDists) {
+        const cand = path.join(dir, 'index.html');
+        if (fs.existsSync(cand)) {
+          indexFile = cand;
+          break;
+        }
+      }
+    }
+
+    app.get('*', (req: Request, res: Response) => {
+      if (indexFile && fs.existsSync(indexFile)) {
         let html = fs.readFileSync(indexFile, 'utf-8');
         html = html.replace(
           '<!--SEO_HEAD-->',
