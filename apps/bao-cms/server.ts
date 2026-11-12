@@ -16,7 +16,6 @@ const helmetFn: any = (helmet as any)?.default || helmet;
 const rateLimitFn: any = (rateLimit as any)?.default || rateLimit;
 const corsFn: any = (cors as any)?.default || cors;
 const multerFn: any = (multer as any)?.default || multer;
-import DOMPurify from 'isomorphic-dompurify';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import {
   StoryUpsertSchema,
@@ -83,13 +82,16 @@ export function createUserSupabaseClient(accessToken?: string): SupabaseClient {
 }
 
 export function sanitizeRichText(html: string): string {
-  return DOMPurify.sanitize(html || '', {
-    ALLOWED_TAGS: [
-      'p', 'br', 'strong', 'em', 'u', 'h2', 'h3', 'h4',
-      'ul', 'ol', 'li', 'blockquote', 'a', 'span',
-    ],
-    ALLOWED_ATTR: ['href', 'target', 'rel', 'class'],
-  });
+  if (!html) return '';
+  return html
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '')
+    .replace(/<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi, '')
+    .replace(/<embed\b[^<]*(?:(?!<\/embed>)<[^<]*)*<\/embed>/gi, '')
+    .replace(/\s+on\w+="[^"]*"/gi, '')
+    .replace(/\s+on\w+='[^']*'/gi, '')
+    .replace(/\s+on\w+=[^\s>]+/gi, '')
+    .replace(/javascript:[^"'>]+/gi, '');
 }
 
 // =============================================================================
@@ -215,7 +217,8 @@ export function createCmsApp() {
         return;
       }
       res.setHeader('Cache-Control', 'public, max-age=86400');
-      res.sendFile(absPath);
+      const fileBytes = readFileSync(absPath);
+      res.send(fileBytes);
     } catch {
       res.status(404).json({ error: 'Media asset not found.' });
     }
