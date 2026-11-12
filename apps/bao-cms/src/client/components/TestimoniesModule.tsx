@@ -300,7 +300,7 @@ export function TestimoniesModule({
 
     try {
       const { data: sD } = await supabase.auth.getSession();
-      const token = sD?.session?.access_token || accessToken;
+      const token = sD?.session?.access_token || '';
 
       const fd = new FormData();
       fd.append('file', file);
@@ -402,8 +402,7 @@ export function TestimoniesModule({
       type: 'warning',
       title: `Delete Testimony?`,
       message: `Are you sure you want to permanently delete the testimony from "${item.name}"? This action will remove it from the public website.`,
-      showCancel: true,
-      confirmLabel: 'Yes, Delete',
+      confirmText: 'Yes, Delete',
       onConfirm: async () => {
         const nextItems = currentItems.filter((i) => i.id !== item.id);
         await saveToDatabase(nextItems);

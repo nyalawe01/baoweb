@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   Upload,
   Trash2,
@@ -3633,7 +3633,7 @@ export function NavigationAndSettingsModule({
 
   const handleDeleteMenuItem = async (id: string, label: string) => {
     showAlert?.({
-      type: 'confirm',
+      type: 'warning',
       title: 'Delete Menu Item?',
       message: `Are you sure you want to remove "${label}" from the navigation menu?`,
       onConfirm: async () => {

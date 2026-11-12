@@ -23,16 +23,8 @@ import { supabase } from '../supabase.js';
 import { HeroBannerImageUploader } from './HeroBannerImageUploader.js';
 import { broadcastLivePublish, AutoSaveStatusBadge, type AutoSaveStatus } from '../lib/liveSync.js';
 
-export interface SweetAlertOptions {
-  type: 'success' | 'error' | 'warning' | 'info' | 'loading';
-  title: string;
-  message: string;
-  websiteUrl?: string;
-  websiteLabel?: string;
-  confirmLabel?: string;
-  onConfirm?: () => void;
-  showCancel?: boolean;
-}
+import { type SweetAlertOptions } from './SweetAlertModal.js';
+export type { SweetAlertOptions };
 
 const getSettingKey = (s: any) => s?.key || s?.setting_key;
 const getSettingValue = (s: any) => s?.value ?? s?.setting_value;

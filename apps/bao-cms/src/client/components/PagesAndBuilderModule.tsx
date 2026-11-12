@@ -352,7 +352,7 @@ export function PagesAndBuilderModule({
             .eq('key', 'hero_banners')
             .maybeSingle();
           const existingBanners = curSetting?.value?.banners || [];
-          const heroImg = resolveMediaUrl(featuredMediaId, media) || heroImage || '/media/public/images/organization/hero1.webp';
+          const heroImg = existingBanners[0]?.image_url || '/media/public/images/organization/hero1.webp';
           const updatedHeroBanner = {
             id: existingBanners[0]?.id || 'banner-home-1',
             badge: translations.en.hero_tag?.trim() || 'Babawatoto Centre for Children & Youth',

@@ -2,13 +2,15 @@ import React from 'react';
 import { CheckCircle2, AlertCircle, Loader2, ExternalLink, X } from 'lucide-react';
 
 export interface SweetAlertOptions {
-  type: 'loading' | 'success' | 'error' | 'warning';
+  type: 'loading' | 'success' | 'error' | 'warning' | 'info';
   title: string;
   message: string;
   details?: string;
   websiteUrl?: string;
   websiteLabel?: string;
   confirmText?: string;
+  confirmLabel?: string;
+  showCancel?: boolean;
   onConfirm?: () => void;
   onClose?: () => void;
 }
