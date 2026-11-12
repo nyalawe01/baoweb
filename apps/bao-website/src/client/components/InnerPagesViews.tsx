@@ -100,6 +100,7 @@ export function StandardPageTemplate({
   siteData,
   navigate,
   hideNews = false,
+  hideMetrics = false,
   children,
 }: {
   pageTitle: string;
@@ -117,13 +118,14 @@ export function StandardPageTemplate({
   siteData: any;
   navigate?: (path: string) => void;
   hideNews?: boolean;
+  hideMetrics?: boolean;
   children?: React.ReactNode;
 }) {
   // Character limit splitting for lead description
   const cleanDesc = (leadDescription || '').trim();
   let firstParagraph = cleanDesc;
   let secondParagraph = '';
-  if (cleanDesc.length > charLimit) {
+  if (!hideMetrics && cleanDesc.length > charLimit) {
     // Find closest sentence or space before charLimit
     const cutoff = cleanDesc.lastIndexOf(' ', charLimit);
     const splitIndex = cutoff > charLimit * 0.7 ? cutoff : charLimit;
@@ -211,54 +213,56 @@ export function StandardPageTemplate({
           </section>
         )}
       {/* 3. IMPACT METRICS COMPONENT: Animated Counters for Chosen Metrics (Borderless, Centered, 3-Row Layout) */}
-      <section className="bg-white border-0 shadow-none p-6 lg:p-8 space-y-8">
-        <div className="text-center space-y-2">
-          <span className="text-[13px] font-extrabold uppercase tracking-wider px-3 py-1 bg-[#E6A500] text-black inline-block">
-            Verified Reach & MEL Indicators
-          </span>
-          <h2 className="text-[28px] sm:text-[32px] font-extrabold text-black">
-            Measurable Impact Across Tanzania
-          </h2>
-        </div>
+      {!hideMetrics && (
+        <section className="bg-white border-0 shadow-none p-6 lg:p-8 space-y-8">
+          <div className="text-center space-y-2">
+            <span className="text-[13px] font-extrabold uppercase tracking-wider px-3 py-1 bg-[#E6A500] text-black inline-block">
+              Verified Reach & MEL Indicators
+            </span>
+            <h2 className="text-[28px] sm:text-[32px] font-extrabold text-black">
+              Measurable Impact Across Tanzania
+            </h2>
+          </div>
 
-        <div
-          className={`grid gap-8 items-center justify-center ${
-            activeMetrics.length === 4
-              ? 'grid-cols-2 md:grid-cols-4'
-              : activeMetrics.length <= 3
-                ? 'grid-cols-1 md:grid-cols-3'
-                : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-6'
-          }`}
-        >
-          {activeMetrics.map((met, idx) => {
-            const IconComponent = metricIconMap[met.type] || BarChart3;
-            return (
-              <div
-                key={idx}
-                className="p-4 bg-transparent border-0 shadow-none flex flex-col items-center justify-center text-center space-y-2"
-              >
-                {/* Row 1: Logo / Icon */}
-                <div className="w-10 h-10 flex items-center justify-center bg-transparent mb-1">
-                  <IconComponent className="w-8 h-8 text-black stroke-[1.75]" />
-                </div>
+          <div
+            className={`grid gap-8 items-center justify-center ${
+              activeMetrics.length === 4
+                ? 'grid-cols-2 md:grid-cols-4'
+                : activeMetrics.length <= 3
+                  ? 'grid-cols-1 md:grid-cols-3'
+                  : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-6'
+            }`}
+          >
+            {activeMetrics.map((met, idx) => {
+              const IconComponent = metricIconMap[met.type] || BarChart3;
+              return (
+                <div
+                  key={idx}
+                  className="p-4 bg-transparent border-0 shadow-none flex flex-col items-center justify-center text-center space-y-2"
+                >
+                  {/* Row 1: Logo / Icon */}
+                  <div className="w-10 h-10 flex items-center justify-center bg-transparent mb-1">
+                    <IconComponent className="w-8 h-8 text-black stroke-[1.75]" />
+                  </div>
 
-                {/* Row 2: Number / Numerical Metric */}
-                <div className="text-[28px] sm:text-[32px] lg:text-[36px] font-extrabold text-black leading-tight tracking-tight flex flex-wrap items-baseline justify-center gap-x-1">
-                  <MetricAnimatedCounter target={met.number} />
-                  <span className="text-[18px] sm:text-[20px] font-bold text-[#E6A500]">
-                    {met.suffix || '+'}
-                  </span>
-                </div>
+                  {/* Row 2: Number / Numerical Metric */}
+                  <div className="text-[28px] sm:text-[32px] lg:text-[36px] font-extrabold text-black leading-tight tracking-tight flex flex-wrap items-baseline justify-center gap-x-1">
+                    <MetricAnimatedCounter target={met.number} />
+                    <span className="text-[18px] sm:text-[20px] font-bold text-[#E6A500]">
+                      {met.suffix || '+'}
+                    </span>
+                  </div>
 
-                {/* Row 3: Text */}
-                <div className="text-[14px] sm:text-[15px] font-extrabold text-black uppercase tracking-wider leading-snug text-center">
-                  {met.type}
+                  {/* Row 3: Text */}
+                  <div className="text-[14px] sm:text-[15px] font-extrabold text-black uppercase tracking-wider leading-snug text-center">
+                    {met.type}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
-      </section>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       {/* 4. OVERFLOW NARRATIVE CONTINUATION PARAGRAPH (Same Type Format) */}
       {secondParagraph && (
@@ -2934,7 +2938,8 @@ export function ResourcesView({
         leadDescription={leadDescription}
         siteData={siteData}
         navigate={navigate}
-        hideNews={false}
+        hideNews={true}
+        hideMetrics={true}
       >
         <SectionSeparator label={lang === 'sw' ? 'Mkusanyiko wa Picha Zilizothibitishwa' : 'Verified Field Photography Collection'} />
         <div className="text-center space-y-2 mb-6">
@@ -3122,37 +3127,9 @@ export function ResourcesView({
         leadDescription={leadDescription}
         siteData={siteData}
         navigate={navigate}
-        hideNews={false}
+        hideNews={true}
+        hideMetrics={true}
       >
-        <SectionSeparator label={lang === 'sw' ? 'Mbinu Kuu na Mifumo ya Kitaalamu' : 'Core Methodology & Technical Frameworks'} />
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
-          {[
-            {
-              title: lang === 'sw' ? 'Miongozo ya Utambuzi wa Watoto Mtaani' : 'Street Outreach & Case Management SOPs',
-              body: lang === 'sw' ? 'Taratibu sanifu za uendeshaji kwa ajili ya utambuzi wa watoto wanaoishi mazingira magumu mtaani, tathmini, na uunganishaji na familia.' : 'Standard Operating Procedures for street child identification, intake assessment, family tracing, and reunification follow-up.',
-              img: '/media/public/images/programmes/IMG_1087.JPG',
-            },
-            {
-              title: lang === 'sw' ? 'Mwongozo wa Mtaala wa MEMKWA' : 'MEMKWA Catch-Up Education Curriculum Guide',
-              body: lang === 'sw' ? 'Mtaala wa elimu ya kasi wa kusoma, kuhesabu, na stadi za maisha unaowawezesha watoto walioko nje ya shule kurudi mfumo rasmi.' : 'Accelerated literacy, numeracy, and life-skills curriculum enabling out-of-school children to re-enter formal primary and secondary schools.',
-              img: '/media/public/images/organization/abouts.webp',
-            },
-            {
-              title: lang === 'sw' ? 'Mwongozo wa Sanaa za Ubunifu za HEART' : 'HEART Creative Arts & Psychosocial Manual',
-              body: lang === 'sw' ? 'Mwongozo maalum wa uponyaji wa kisaikolojia na elimu kupitia sarakasi, maigizo ya maendeleo, na ngoma za asili.' : 'Structured facilitation guide for healing and education through acrobatics, theatre-for-development, and traditional music.',
-              img: '/media/public/images/programmes/arts1.webp',
-            },
-          ].map((item, idx) => (
-            <div key={idx} className="bg-white border-2 border-black/10 hover:border-[#E6A500] rounded-2xl shadow-sm hover:shadow-lg transition overflow-hidden">
-              <img src={item.img} alt={item.title} className="w-full h-52 object-cover" />
-              <div className="p-6 space-y-3">
-                <h3 className="text-xl font-black text-black leading-snug">{item.title}</h3>
-                <p className="text-sm sm:text-base text-black/80 leading-relaxed font-medium">{item.body}</p>
-              </div>
-            </div>
-          ))}
-        </section>
-
         <SectionSeparator label={lang === 'sw' ? 'Hifadhi ya Nyaraka Zinazoweza Kupakuliwa' : 'Downloadable Documentation Repository'} />
         {docItems.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
@@ -3223,38 +3200,9 @@ export function ResourcesView({
         leadDescription={leadDescription}
         siteData={siteData}
         navigate={navigate}
-        hideNews={false}
+        hideNews={true}
+        hideMetrics={true}
       >
-        <SectionSeparator label={lang === 'sw' ? 'Sera za Lazima za Kitaasisi' : 'Mandatory Institutional Policies'} />
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
-          {[
-            {
-              title: lang === 'sw' ? '1. Sera ya Ulinzi na Usalama wa Mtoto' : '1. Child Safeguarding & Protection Policy',
-              desc: lang === 'sw' ? 'Uhakiki wa lazima wa watumishi, kanuni za maadili, itifaki za kutoa taarifa za matukio, na ridhaa rasmi kwa ajili ya picha na hadithi za watoto.' : 'Mandatory background vetting, staff code of conduct, incident reporting protocols, and written informed consent requirements for all child-related media and stories.',
-            },
-            {
-              title: lang === 'sw' ? '2. Sera ya Kuzuia Unyonyaji na Unyanyasaji wa Kijinsia (PSEAH)' : '2. Prevention of Sexual Exploitation, Abuse & Harassment (PSEAH)',
-              desc: lang === 'sw' ? 'Msimamo mkali wa kutovumilia kabisa unaowalinda walengwa, jamii na wafanyakazi, ukiambatana na mifumo ya siri ya kutoa taarifa.' : 'Strict zero-tolerance policy protecting beneficiaries, community members, and staff, with confidential whistleblowing channels.',
-            },
-            {
-              title: lang === 'sw' ? '3. Sera ya Usimamizi wa Fedha, Kupinga Udanganyifu na Ununuzi' : '3. Financial Management, Anti-Fraud & Procurement Policy',
-              desc: lang === 'sw' ? 'Udhibiti wa ukaguzi wa fedha, uthibitishaji wa watia saini wawili, ununuzi wa uwazi, na viwango vya utiifu kwa wafadhili.' : 'Audited accounting controls, dual-signatory authorization, transparent vendor procurement, and donor compliance standards.',
-            },
-            {
-              title: lang === 'sw' ? '4. Mwongozo wa Usawa wa Kijinsia, Ulemavu na Ushirikishwaji (GEDSI)' : '4. Gender Equality, Disability & Social Inclusion (GEDSI) Guideline',
-              desc: lang === 'sw' ? 'Kuhakikisha ushiriki sawa na kuondoa vizuizi kwa wasichana, vijana wanaoishi mazingira magumu, na watoto wenye ulemavu.' : 'Ensuring equitable participation and barrier-free access for girls, street-connected youth, and children with disabilities.',
-            },
-          ].map((pol, idx) => (
-            <div key={idx} className="bg-white border-2 border-black/10 hover:border-[#E6A500] rounded-2xl shadow-sm hover:shadow-lg transition p-6 sm:p-8 space-y-3">
-              <div className="w-12 h-12 rounded-xl bg-[#E6A500] text-black flex items-center justify-center">
-                <Scale className="w-6 h-6 text-black" />
-              </div>
-              <h3 className="text-xl sm:text-2xl font-black text-black leading-snug">{pol.title}</h3>
-              <p className="text-sm sm:text-base text-black/80 font-medium leading-relaxed">{pol.desc}</p>
-            </div>
-          ))}
-        </section>
-
         <SectionSeparator label={lang === 'sw' ? 'Nyaraka za Sera Zinazoweza Kupakuliwa' : 'Downloadable Policy Documents'} />
         {policyDocs.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
@@ -3326,7 +3274,8 @@ export function ResourcesView({
       leadDescription={pubLeadDescription}
       siteData={siteData}
       navigate={navigate}
-      hideNews={false}
+      hideNews={true}
+      hideMetrics={true}
     >
       <SectionSeparator label={lang === 'sw' ? 'Tafuta na Pakua Machapisho' : 'Search & Download Publications'} />
       <div className="flex flex-wrap items-center justify-between gap-4">

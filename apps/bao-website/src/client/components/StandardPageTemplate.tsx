@@ -63,6 +63,7 @@ export function StandardPageTemplate({
   siteData,
   navigate,
   hideNews = false,
+  hideMetrics = false,
   children,
 }: {
   pageTitle: string;
@@ -80,6 +81,7 @@ export function StandardPageTemplate({
   siteData: any;
   navigate?: (path: string) => void;
   hideNews?: boolean;
+  hideMetrics?: boolean;
   children?: React.ReactNode;
 }) {
   // Character limit splitting for lead description
@@ -87,7 +89,7 @@ export function StandardPageTemplate({
   let firstParagraph = cleanDesc;
   let secondParagraph = '';
 
-  if (cleanDesc.length > charLimit) {
+  if (!hideMetrics && cleanDesc.length > charLimit) {
     const cutoff = cleanDesc.lastIndexOf(' ', charLimit);
     const splitIndex = cutoff > charLimit * 0.7 ? cutoff : charLimit;
     firstParagraph = cleanDesc.slice(0, splitIndex).trim();
@@ -194,54 +196,56 @@ export function StandardPageTemplate({
         )}
 
       {/* 3. IMPACT METRICS COMPONENT: Animated Counters for Chosen Metrics (Borderless, Centered, 3-Row Layout) */}
-      <section className="bg-white border-0 shadow-none p-6 lg:p-8 space-y-8">
-        <div className="text-center space-y-2">
-          <span className="text-[13px] font-extrabold uppercase tracking-wider px-3 py-1 bg-[#E6A500] text-black inline-block">
-            Verified Reach & MEL Indicators
-          </span>
-          <h2 className="text-[28px] sm:text-[32px] font-extrabold text-black">
-            Measurable Impact Across Tanzania
-          </h2>
-        </div>
+      {!hideMetrics && (
+        <section className="bg-white border-0 shadow-none p-6 lg:p-8 space-y-8">
+          <div className="text-center space-y-2">
+            <span className="text-[13px] font-extrabold uppercase tracking-wider px-3 py-1 bg-[#E6A500] text-black inline-block">
+              Verified Reach & MEL Indicators
+            </span>
+            <h2 className="text-[28px] sm:text-[32px] font-extrabold text-black">
+              Measurable Impact Across Tanzania
+            </h2>
+          </div>
 
-        <div
-          className={`grid gap-8 items-center justify-center ${
-            activeMetrics.length === 4
-              ? 'grid-cols-2 md:grid-cols-4'
-              : activeMetrics.length <= 3
-                ? 'grid-cols-1 md:grid-cols-3'
-                : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-6'
-          }`}
-        >
-          {activeMetrics.map((met, idx) => {
-            const IconComponent = metricIconMap[met.type] || BarChart3;
-            return (
-              <div
-                key={idx}
-                className="p-4 bg-transparent border-0 shadow-none flex flex-col items-center justify-center text-center space-y-2"
-              >
-                {/* Row 1: Logo / Icon */}
-                <div className="w-10 h-10 flex items-center justify-center bg-transparent mb-1">
-                  <IconComponent className="w-8 h-8 text-black stroke-[1.75]" />
-                </div>
+          <div
+            className={`grid gap-8 items-center justify-center ${
+              activeMetrics.length === 4
+                ? 'grid-cols-2 md:grid-cols-4'
+                : activeMetrics.length <= 3
+                  ? 'grid-cols-1 md:grid-cols-3'
+                  : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-6'
+            }`}
+          >
+            {activeMetrics.map((met, idx) => {
+              const IconComponent = metricIconMap[met.type] || BarChart3;
+              return (
+                <div
+                  key={idx}
+                  className="p-4 bg-transparent border-0 shadow-none flex flex-col items-center justify-center text-center space-y-2"
+                >
+                  {/* Row 1: Logo / Icon */}
+                  <div className="w-10 h-10 flex items-center justify-center bg-transparent mb-1">
+                    <IconComponent className="w-8 h-8 text-black stroke-[1.75]" />
+                  </div>
 
-                {/* Row 2: Number / Numerical Metric */}
-                <div className="text-[28px] sm:text-[32px] lg:text-[36px] font-extrabold text-black leading-tight tracking-tight flex flex-wrap items-baseline justify-center gap-x-1">
-                  <MetricAnimatedCounter target={met.number} />
-                  <span className="text-[18px] sm:text-[20px] font-bold text-[#E6A500]">
-                    {met.suffix || '+'}
-                  </span>
-                </div>
+                  {/* Row 2: Number / Numerical Metric */}
+                  <div className="text-[28px] sm:text-[32px] lg:text-[36px] font-extrabold text-black leading-tight tracking-tight flex flex-wrap items-baseline justify-center gap-x-1">
+                    <MetricAnimatedCounter target={met.number} />
+                    <span className="text-[18px] sm:text-[20px] font-bold text-[#E6A500]">
+                      {met.suffix || '+'}
+                    </span>
+                  </div>
 
-                {/* Row 3: Text */}
-                <div className="text-[14px] sm:text-[15px] font-extrabold text-black uppercase tracking-wider leading-snug text-center">
-                  {met.type}
+                  {/* Row 3: Text */}
+                  <div className="text-[14px] sm:text-[15px] font-extrabold text-black uppercase tracking-wider leading-snug text-center">
+                    {met.type}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
-      </section>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       {/* 4. OVERFLOW NARRATIVE CONTINUATION PARAGRAPH (Same Type Format) */}
       {secondParagraph && (
